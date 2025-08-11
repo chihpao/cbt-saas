@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* 手機細節，可加可不加 */
+html { -webkit-tap-highlight-color: transparent; }
