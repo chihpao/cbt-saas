@@ -1,10 +1,11 @@
 <script setup>
-import { useAppStore } from '../stores/app'
 import { useRouter } from 'vue-router'
+import { useAppStore } from '../stores/app'
+
 const store = useAppStore()
 const router = useRouter()
 
-function next() {
+function nextStep(){
   if (!store.scheduledTime) return
   localStorage.setItem('scheduled_time', store.scheduledTime)
   router.push('/notify')
@@ -20,6 +21,6 @@ function next() {
              v-model="store.scheduledTime"
              :min="new Date().toISOString().slice(0,16)" />
     </div>
-    <button class="w-full py-3 rounded bg-black text-white" @click="next">下一步</button>
+    <button class="w-full py-3 rounded bg-black text-white" @click="nextStep">下一步</button>
   </div>
 </template>

@@ -2,11 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app'
-import { scheduleTask } from '../services/mockApi'
+import { scheduleTask } from '../services/supabaseApi'
 import { buildICS, downloadICS } from '../utils/ics'
 
 const router = useRouter()
 const store = useAppStore()
+
 const opt = ref({ gcal: true, email: false, line: false })
 const busy = ref(false)
 
@@ -25,9 +26,7 @@ onMounted(() => {
   }
 })
 
-function toISO(dt) {
-  return typeof dt === 'string' ? new Date(dt).toISOString() : dt.toISOString()
-}
+const toISO = v => (typeof v === 'string' ? new Date(v).toISOString() : v.toISOString())
 
 async function onConfirm() {
   if (!store.selectedTask) return alert('請先選擇任務')
@@ -41,7 +40,7 @@ async function onConfirm() {
     if (opt.value.line) types.push('line')
 
     const recordId = await scheduleTask(
-      store.userId || 'demo-user',
+      store.userId,
       store.selectedTask.task_id,
       toISO(store.scheduledTime),
       types
@@ -54,8 +53,7 @@ async function onConfirm() {
       const ics = buildICS({
         uid: `rec-${recordId}@cbt-saas`,
         title: store.selectedTask.title,
-        startISO,
-        endISO,
+        startISO, endISO,
         desc: 'CBT 任務提醒'
       })
       downloadICS('cbt-task.ics', ics)
@@ -64,13 +62,12 @@ async function onConfirm() {
     router.push('/complete')
   } catch (e) {
     console.error(e)
-    alert('建立排程或下載檔案時發生錯誤：' + (e?.message || e))
+    alert('建立排程失敗：' + (e?.message || e))
   } finally {
     busy.value = false
   }
 }
 </script>
-
 
 <template>
   <div class="p-4 space-y-4">

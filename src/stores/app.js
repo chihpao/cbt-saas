@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
-    userId: 'demo-user',         // 先 mock，之後接後端 user_id
+    userId: '',
     tasks: [],
     selectedTask: null,
     scheduledTime: '',
@@ -10,7 +10,7 @@ export const useAppStore = defineStore('app', {
     lastRecordId: null,
   }),
   actions: {
-    resetFlow(){
+    resetFlow() {
       this.selectedTask = null
       this.scheduledTime = ''
       this.notifyTypes = []

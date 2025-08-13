@@ -1,8 +1,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { v4 as uuid } from 'uuid'
 import { useAppStore } from '../stores/app'
-import { listTasks, createCustomTask } from '../services/mockApi' // 之後換成 supabaseApi
+import { getOrCreateUser, listTasks, createCustomTask } from '../services/supabaseApi'
 
 const router = useRouter()
 const store = useAppStore()
@@ -13,10 +14,14 @@ const err = ref('')
 
 onMounted(async () => {
   try {
-    // 先載入任務清單（mock）
-    store.tasks = await listTasks(store.userId || 'demo-user')
+    // 匿名識別：localStorage 存 anon_id → 到後端換 user_id
+    let anon = localStorage.getItem('anon_id')
+    if (!anon) { anon = uuid(); localStorage.setItem('anon_id', anon) }
+
+    store.userId = await getOrCreateUser(anon)
+    store.tasks = await listTasks(store.userId)
   } catch (e) {
-    err.value = String(e?.message || e)
+    err.value = e?.message || String(e)
   } finally {
     loading.value = false
   }
@@ -24,14 +29,14 @@ onMounted(async () => {
 
 async function addCustom() {
   if (!custom.value.trim()) return
-  await createCustomTask(store.userId || 'demo-user', custom.value.trim())
-  store.tasks = await listTasks(store.userId || 'demo-user')
+  await createCustomTask(store.userId, custom.value.trim())
+  store.tasks = await listTasks(store.userId)
   custom.value = ''
 }
 
 function pick(t) {
-  store.selectedTask = t
-  localStorage.setItem('selected_task', JSON.stringify({ task_id: t.task_id, title: t.title }))
+  store.selectedTask = { task_id: t.task_id, title: t.title }
+  localStorage.setItem('selected_task', JSON.stringify(store.selectedTask))
 
   const dt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16)
   store.scheduledTime = dt
@@ -57,23 +62,16 @@ function pick(t) {
           @click="pick(t)"
         >
           <div class="font-medium">{{ t.title }}</div>
-          <div class="text-[10px] text-gray-400 mt-1">
-            {{ t.is_default ? '預設' : '自訂' }}
-          </div>
+          <div v-if="t.description" class="text-xs text-gray-500">{{ t.description }}</div>
+          <div class="text-[10px] text-gray-400 mt-1">{{ t.is_default ? '預設' : '自訂' }}</div>
         </button>
       </div>
 
       <div class="mt-6">
         <label class="text-sm text-gray-600">自訂任務</label>
         <div class="flex gap-2 mt-2">
-          <input
-            v-model="custom"
-            placeholder="例如：散步到超商"
-            class="flex-1 border rounded px-3 py-2"
-          />
-          <button class="px-3 rounded bg-black text-white" @click="addCustom">
-            新增
-          </button>
+          <input v-model="custom" placeholder="例如：散步到超商" class="flex-1 border rounded px-3 py-2"/>
+          <button class="px-3 rounded bg-black text-white" @click="addCustom">新增</button>
         </div>
       </div>
     </div>
