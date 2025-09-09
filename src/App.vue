@@ -5,3 +5,7 @@
     </div>
   </div>
 </template>
+
+<script setup>
+// 這裡可以添加組件邏輯
+</script>
