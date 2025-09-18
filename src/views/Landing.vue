@@ -5,15 +5,32 @@ import { getCurrentUser, signOut, supa } from '@/services/supaClient'
 import IconBrain from '@/components/icons/IconBrain.vue'
 import IconDevices from '@/components/icons/IconDevices.vue'
 import IconShield from '@/components/icons/IconShield.vue'
+import IconTaskList from '@/components/icons/IconTaskList.vue'
+import IconClock from '@/components/icons/IconClock.vue'
+import IconReflection from '@/components/icons/IconReflection.vue'
 
 const router = useRouter()
 const user = ref(null)
 
 const steps = [
-  { emoji: '🎯', title: '挑選任務', description: '從範例或自訂活動中，選擇能帶來愉悅與價值感的行動' },
-  { emoji: '⏰', title: '設定時間', description: '將活動排入行程，設定提醒，幫助你真的去做' },
-  { emoji: '🧠', title: '完成與反思', description: '完成後簡單記錄心情變化，累積屬於你的正向能量' }
+  {
+    icon: 'tasks',
+    title: '挑選任務',
+    description: '挑選最符合當下需求的任務或活動，先清楚設定可執行的行動。'
+  },
+  {
+    icon: 'clock',
+    title: '設定時間',
+    description: '把活動安排進行程，設定開始與結束時間，為自己保留行動的空間。'
+  },
+  {
+    icon: 'reflection',
+    title: '完成與反思',
+    description: '完成後記錄感受與收穫，檢視成效並調整下一步。'
+  }
 ]
+
+
 
 const features = [
   { icon: 'brain',  title: '行為活化方法', description: '以科學實證的 CBT 技術──行為活化，幫助你逐步恢復動力，找回積極生活感。' },
@@ -21,7 +38,14 @@ const features = [
   { icon: 'shield', title: '隱私保護',     description: '你的資料只屬於你，我們以最高標準保護隱私與安全。' }
 ]
 
-const iconMap = computed(() => ({ brain: IconBrain, device: IconDevices, shield: IconShield }))
+const iconMap = computed(() => ({
+  brain: IconBrain,
+  device: IconDevices,
+  shield: IconShield,
+  tasks: IconTaskList,
+  clock: IconClock,
+  reflection: IconReflection
+}))
 
 const checkAuth = async () => { user.value = await getCurrentUser() }
 const handleSignIn = async () => {
@@ -107,10 +131,16 @@ onMounted(() => {
           <div class="relative max-w-4xl mx-auto">
             <div class="relative z-10 p-6 md:p-8 bg-white rounded-2xl shadow-lg">
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div v-for="(step, index) in steps" :key="index" class="p-4 rounded-xl bg-indigo-50">
-                  <div class="text-3xl mb-3">{{ step.emoji }}</div>
-                  <h3 class="font-semibold text-gray-800 mb-2">{{ step.title }}</h3>
-                  <p class="text-sm text-gray-600">{{ step.description }}</p>
+                <div v-for="(step, index) in steps" :key="index" class="p-5 rounded-xl bg-white border border-indigo-100 shadow-sm">
+                  <div class="flex flex-col items-center text-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
+                      <component :is="iconMap[step.icon]" class="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 class="font-semibold text-gray-800 mb-1">{{ step.title }}</h3>
+                      <p class="text-sm text-gray-600 leading-relaxed">{{ step.description }}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -157,3 +187,8 @@ onMounted(() => {
 html { scroll-behavior: smooth; }
 </style>
   
+
+
+
+
+
