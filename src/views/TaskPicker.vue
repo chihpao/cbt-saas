@@ -15,7 +15,7 @@ const creating = ref(false)
 
 // 9 大類別，固定選單
 const categories = [
-  '運動','社交','興趣','學習','工作','家務','健康','心情','其他'
+  '正念','休閒','運動','健康','飲食','家務','學習','社交','工作'
 ]
 
 const categoriesFromTasks = computed(() => {
