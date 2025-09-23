@@ -8,11 +8,7 @@
         <!-- Google 登入按鈕 -->
         <div>
           <button @click="signInWithGoogle" class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
-                <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.28426 53.749 C -8.52426 55.049 -9.42452 56.359 -10.9645 57.239 L -10.9545 57.329 L -6.81442 60.209 L -6.80442 60.199 C -4.56486 61.409 -1.92363 62.019 0.185547 62.019 C 4.93555 62.019 8.58555 59.129 10.0855 55.529 C 10.6655 54.129 10.9855 52.599 10.9855 50.999 C 10.9855 49.399 10.6655 47.869 10.0855 46.469 C 8.58555 42.859 4.93555 39.969 0.185547 39.969 C -1.30445 39.969 -2.73445 40.249 -4.05445 40.759 L -4.04445 40.759 L -9.03452 36.259 L -9.02452 36.259 C -6.55452 29.639 -0.904524 24.739 5.71548 24.739 C 12.9255 24.739 18.7155 30.529 18.7155 37.739 C 18.7155 38.429 18.6555 39.099 18.5455 39.759 L 18.5455 44.999 L 14.7655 44.999 C 13.3555 40.589 9.18555 39.969 5.71548 39.969 Z"/>
-              </g>
-            </svg>
+            <img :src="googleIconUrl" alt="Google" class="w-5 h-5 mr-2" />
             使用 Google 帳號登入
           </button>
         </div>
@@ -73,6 +69,7 @@
 </template>
 
 <script setup>
+import googleIconUrl from '@/assets/google.svg?url'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supa } from '@/services/supaClient'

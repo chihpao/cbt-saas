@@ -120,9 +120,8 @@ onMounted(() => {
             從小行動開始，活化你的生活
           </h1>
           <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
-            透過行為活化（Behavioral Activation, BA）與 CBT 引導，安排正向、有意義的活動，<br>幫助你打破情緒低落的惡性循環。
+            以行為活化(BA)與CBT引導，安排正向有意義的活動，打破情緒低落的惡性循環。
           </p>
-
           <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <button @click="$router.push('/tasks')" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all">立刻開始</button>
             <button @click="scrollToFeatures" class="px-8 py-3 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium rounded-lg">了解更多</button>
