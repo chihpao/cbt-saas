@@ -46,7 +46,7 @@
           <div class="flex items-center">
             <input id="terms" v-model="terms" name="terms" type="checkbox" required class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
             <label for="terms" class="ml-2 block text-sm text-gray-900">
-              我同意 <a href="#" class="text-indigo-600 hover:text-indigo-500">服務條款</a> 和 <a href="#" class="text-indigo-600 hover:text-indigo-500">隱私政策</a>
+              我同意 <router-link to="/terms" class="text-indigo-600 hover:text-indigo-500">服務條款</router-link> 和 <router-link to="/privacy" class="text-indigo-600 hover:text-indigo-500">隱私政策</router-link>
             </label>
           </div>
 

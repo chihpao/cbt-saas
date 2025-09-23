@@ -43,6 +43,16 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/terms',
+    component: () => import('../views/Terms.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/privacy',
+    component: () => import('../views/Privacy.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/logout',
     redirect: '/',
     beforeEnter: async (to, from, next) => {
