@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import AppLayout from '@/components/layout/AppLayout.vue'
 
 const router = useRouter()
 
-const task = ref(null)               // { task_id, title, category, is_default?, _ephemeral? }
-const scheduled = ref('')            // yyyy-MM-ddTHH:mm（本地）
+const task = ref(null)               
+const scheduled = ref('')            
 
 const err = ref('')
 const ready = ref(false)
@@ -19,7 +20,6 @@ onMounted(() => {
     }
     task.value = JSON.parse(raw)
 
-    // 預設時間：若沒有，就給 30 分鐘後
     const storedTime = localStorage.getItem('scheduled_time')
     if (storedTime) {
       scheduled.value = storedTime
@@ -37,7 +37,7 @@ onMounted(() => {
 
 const taskBadge = computed(() => {
   if (!task.value) return ''
-  if (task.value._ephemeral) return '只當次'
+  if (task.value._ephemeral) return '臨時' // Changed "只當次" to "臨時" for consistency
   if (!task.value.is_default) return '自訂'
   return '預設'
 })
@@ -60,52 +60,75 @@ function goNext() {
     err.value = '請選擇時間'
     return
   }
-  // 時間已寫回 localStorage，直接前往通知畫面
   router.push('/notify')
 }
 </script>
 
 <template>
-  <div class="max-w-xl mx-auto p-4">
-    <h1 class="text-2xl font-bold">確認時間</h1>
-    <p v-if="err" class="text-sm text-red-600 mt-2">{{ err }}</p>
+  <AppLayout>
+    <div class="max-w-2xl mx-auto">
+      <div class="mb-8 text-center md:text-left">
+        <h1 class="text-2xl font-bold text-gray-900">確認時間</h1>
+        <div class="h-1 w-16 bg-indigo-500 rounded mt-2 mx-auto md:mx-0"></div>
+        <p class="mt-2 text-gray-500">為這項活動安排一個合適的時間。</p>
+      </div>
 
-    <div v-if="ready && task" class="mt-5 space-y-4">
-      <div class="p-4 border rounded-lg">
-        <div class="flex items-center justify-between">
+      <p v-if="err" class="text-sm text-red-600 mb-4 bg-red-50 p-3 rounded-lg flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        {{ err }}
+      </p>
+
+      <div v-if="ready && task" class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 space-y-6">
+        <!-- Task Info -->
+        <div class="flex items-start justify-between border-b border-gray-100 pb-6">
           <div>
-            <div class="text-lg font-semibold">{{ task.title }}</div>
-            <div class="text-gray-500 text-sm">
-              類別：{{ task.category || '—' }}
-            </div>
+            <h2 class="text-xl font-bold text-gray-800">{{ task.title }}</h2>
+            <p class="text-gray-500 text-sm mt-1">
+              類別：<span class="text-indigo-600 font-medium">{{ task.category || '—' }}</span>
+            </p>
           </div>
-          <div
-            class="text-xs px-2 py-1 rounded border"
+          <span 
+            class="px-3 py-1 rounded-full text-xs font-medium border"
             :class="{
-              'text-orange-600 border-orange-300': task._ephemeral,
-              'text-blue-600 border-blue-300': !task._ephemeral && !task.is_default,
-              'text-gray-600 border-gray-300': task.is_default
+              'bg-orange-50 text-orange-600 border-orange-200': task._ephemeral,
+              'bg-blue-50 text-blue-600 border-blue-200': !task._ephemeral && !task.is_default,
+              'bg-gray-50 text-gray-600 border-gray-200': task.is_default
             }"
           >
             {{ taskBadge }}
+          </span>
+        </div>
+
+        <!-- Date Picker -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">開始時間</label>
+          <div class="relative">
+            <input
+              type="datetime-local"
+              :value="scheduled"
+              @change="onTimeChange"
+              class="block w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all text-gray-700 bg-gray-50 focus:bg-white"
+            />
           </div>
+          <p class="text-xs text-gray-400 mt-2">我們會在這個時間提醒你。</p>
         </div>
 
-        <div class="mt-4">
-          <label class="block text-sm text-gray-600 mb-1">開始時間</label>
-          <input
-            type="datetime-local"
-            :value="scheduled"
-            @change="onTimeChange"
-            class="border rounded px-3 py-2 w-full"
-          />
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-4">
+          <button 
+            @click="goBack"
+            class="w-full sm:w-auto px-6 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 font-medium transition-all"
+          >
+            上一步
+          </button>
+          <button 
+            @click="goNext"
+            class="w-full sm:flex-1 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-md hover:shadow-lg transition-all"
+          >
+            下一步
+          </button>
         </div>
-      </div>
-
-      <div class="flex gap-3">
-        <button class="px-4 py-2 rounded border" @click="goBack">上一步</button>
-        <button class="px-4 py-2 rounded bg-black text-white" @click="goNext">下一步</button>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
