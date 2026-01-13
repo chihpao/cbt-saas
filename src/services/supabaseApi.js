@@ -183,6 +183,14 @@ export async function completeWithCBT(userId, recordId, payload = {}) {
       throw new Error('找不到該紀錄 (Local)')
   }
 }
+
+/** 取得待辦中的紀錄 (LocalStorage) */
+export async function getPendingRecords(userId) {
+  if (!userId) return []
+  const recs = LS(`records_${userId}`) || []
+  return recs.filter(r => r.status === 'pending').sort((a,b) => new Date(a.scheduled_time) - new Date(b.scheduled_time))
+}
+
 /* ===== 未登入使用者：暫存任務（存在 localStorage） ===== */
 const EPHEMERAL_KEY = 'cbt_ephemeral_tasks'
 
