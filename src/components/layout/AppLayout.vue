@@ -5,6 +5,17 @@ import { getCurrentUser, signOut, supa } from '@/services/supaClient'
 
 const router = useRouter()
 const user = ref(null)
+const isUserMenuOpen = ref(false)
+
+const handleSwitchAccount = async () => {
+  try {
+    await signOut()
+    user.value = null
+    router.push('/login')
+  } catch (error) {
+    console.error('切換帳號錯誤:', error.message)
+  }
+}
 
 const handleSignOut = async () => { 
   try {
@@ -68,17 +79,53 @@ onMounted(async () => {
           </router-link>
         </nav>
 
-        <div class="flex items-center gap-4 flex-shrink-0">
-          <span v-if="user" class="hidden md:inline text-sm font-medium text-gray-600">{{ user.email }}</span>
-          <button 
-            @click="handleSignOut" 
-            class="p-2 sm:px-4 sm:py-2 text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
-            title="登出"
-          >
-            <span class="hidden sm:inline">登出</span>
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          </button>
-        </div>
+          <!-- User Profile Dropdown -->
+          <div v-if="user" class="relative ml-4">
+            <button 
+              @click="isUserMenuOpen = !isUserMenuOpen"
+              class="flex items-center gap-2 rounded-full border border-gray-200 bg-white pl-1 pr-1 py-1 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              title="使用者選單"
+            >
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                {{ user.email ? user.email.substring(0, 2).toUpperCase() : 'USER' }}
+              </div>
+              <!-- Mobile only: show simple chevron -->
+              <svg class="w-4 h-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div 
+              v-show="isUserMenuOpen" 
+              class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 transform origin-top-right transition-all duration-200"
+            >
+              <div class="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Signed in as</p>
+                <p class="text-sm font-semibold text-gray-900 truncate" :title="user.email">{{ user.email }}</p>
+              </div>
+
+              <div class="p-1">
+                <button 
+                  @click="handleSwitchAccount"
+                  class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors flex items-center gap-2"
+                >
+                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                   切換帳號
+                </button>
+                <button 
+                  @click="handleSignOut"
+                  class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  登出
+                </button>
+              </div>
+            </div>
+
+            <!-- Backdrop to close -->
+            <div v-if="isUserMenuOpen" @click="isUserMenuOpen = false" class="fixed inset-0 z-40 bg-transparent cursor-default"></div>
+          </div>
       </div>
     </header>
 
@@ -139,6 +186,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+/* No changes needed for CSS, using Tailwind utilities */
 .safe-area-pb {
   padding-bottom: env(safe-area-inset-bottom, 20px);
 }

@@ -111,12 +111,11 @@ function onDownloadICS() {
   <AppLayout>
     <div class="max-w-2xl mx-auto">
       <div class="mb-8 text-center md:text-left">
-        <h1 class="text-2xl font-bold text-gray-900">加入行事曆</h1>
-        <div class="h-1 w-16 bg-indigo-500 rounded mt-2 mx-auto md:mx-0"></div>
-        <p class="mt-2 text-gray-500">將這項活動加入你的行事曆，提醒自己去完成。</p>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">加入行事曆</h1>
+        <p class="mt-2 text-gray-500 text-lg">將這項活動加入你的行事曆，提醒自己去完成。</p>
       </div>
 
-      <div class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 space-y-6">
+      <div class="bg-white/80 backdrop-blur-xl rounded-[2rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-indigo-50/50 space-y-8">
         <div class="bg-indigo-50 rounded-xl p-4 border border-indigo-100 flex items-start gap-3">
           <svg class="w-6 h-6 text-indigo-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <p class="text-sm text-indigo-900">

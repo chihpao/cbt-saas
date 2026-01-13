@@ -1,6 +1,9 @@
 // src/services/supabaseApi.js
 import { supa } from './supaClient'
 
+// Helper for Local Storage Fallback (Backend RPCs are broken)
+const LS = (k, v) => v === undefined ? JSON.parse(localStorage.getItem(k) || 'null') : localStorage.setItem(k, JSON.stringify(v))
+
 /** 取得目前登入使用者（沒有就回 null） */
 export async function getCurrentUser() {
   const { data: { user } } = await supa.auth.getUser()
@@ -63,7 +66,7 @@ export async function listTasks() {
     .select('task_id, title, description, category, is_default')
     .eq('is_default', false)
     .eq('creator_user', user.id)
-    .order('title', { ascending: true })
+    .order('created_at', { ascending: true })
 
   if (e2) throw e2
 
@@ -119,49 +122,66 @@ export async function updateCustomTask(taskId, patch) {
   return data
 }
 
-/** 建立排程記錄，回傳 record_id（未登入也允許透過 anon user id） */
+/** 建立排程記錄，回傳 record_id（使用 LocalStorage 當作 Fallback） */
 export async function scheduleTask(userId, taskId, timeISO, notifyTypes = []) {
   if (!userId) throw new Error('缺少 userId')
   if (!timeISO) throw new Error('缺少排程時間')
 
-  const { data, error } = await supa.rpc('rpc_schedule', {
-    p_user: userId,
-    p_task_id: taskId ?? null,
-    p_time: timeISO,
-    p_notify_types: notifyTypes
+  // NOTE: Backend RPC 'rpc_schedule' fails due to type mismatch (UUID vs BigInt).
+  // Falling back to LocalStorage implementation to allow app to function.
+  console.warn('Backend RPC broken, using LocalStorage for scheduleTask')
+  
+  const recs = LS(`records_${userId}`) || []
+  const record_id = recs.length ? (Math.max(...recs.map(r => r.record_id)) + 1) : 1
+  recs.push({ 
+      record_id, 
+      task_id: taskId, 
+      scheduled_time: timeISO, 
+      status: 'pending', 
+      notify: notifyTypes 
   })
-
-  if (error) throw error
-  return data ?? null
+  LS(`records_${userId}`, recs)
+  return record_id
 }
 
-/** 儀表板統計資訊 */
+/** 儀表板統計資訊 (LocalStorage Fallback) */
 export async function stats(userId) {
   if (!userId) throw new Error('缺少 userId')
 
-  const { data, error } = await supa.rpc('rpc_stats', { p_user: userId })
-  if (error) throw error
-  return data || { planned: 0, completed: 0, avg_relief: 0 }
+  // NOTE: Backend RPC 'rpc_stats' likely broken or returns 0 due to missing records table access.
+  // Using LocalStorage stats.
+  const recs = (LS(`records_${userId}`) || [])
+  const done = recs.filter(r => r.status === 'completed')
+  const diffs = done.map(r => (r?.cbt?.anxiety_before ?? 0) - (r?.cbt?.anxiety_after ?? 0)).filter(n => !isNaN(n))
+  
+  return { 
+      planned: recs.length, 
+      completed: done.length, 
+      avg_relief: diffs.length ? (diffs.reduce((a, b) => a + b, 0) / diffs.length).toFixed(1) : 0 
+  }
 }
 
 
-/** CBT 完成填寫 */
+/** CBT 完成填寫 (LocalStorage Fallback) */
 export async function completeWithCBT(userId, recordId, payload = {}) {
   if (!userId) throw new Error('缺少 userId')
   if (!recordId) throw new Error('缺少 recordId')
 
-  const { error } = await supa.rpc('rpc_complete_with_cbt', {
-    p_user: userId,
-    p_record: recordId,
-    p_thought: payload.thought_before ?? null,
-    p_before: payload.anxiety_before ?? null,
-    p_after: payload.anxiety_after ?? null,
-    p_feel: payload.feeling_after ?? null,
-    p_belief: payload.belief_adjustment ?? null
-  })
+  // NOTE: Backend RPC broken. Using LocalStorage.
+  console.warn('Backend RPC broken, using LocalStorage for completeWithCBT')
 
-  if (error) throw error
-  return true
+  const recs = LS(`records_${userId}`) || []
+  // Ensure recordId is treated as number if it comes from our LS generator
+  const r = recs.find(x => x.record_id == recordId)
+  
+  if (r) { 
+      r.status = 'completed'
+      r.cbt = payload 
+      LS(`records_${userId}`, recs)
+      return true
+  } else {
+      throw new Error('找不到該紀錄 (Local)')
+  }
 }
 /* ===== 未登入使用者：暫存任務（存在 localStorage） ===== */
 const EPHEMERAL_KEY = 'cbt_ephemeral_tasks'

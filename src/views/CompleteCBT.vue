@@ -1,11 +1,15 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { v4 as uuid } from 'uuid'
+import { useAppStore } from '../stores/app'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import { completeWithCBT, getOrCreateUser, scheduleTask } from '@/services/supabaseApi'
 // import { saveCbtRecord /* etc. */ } from '@/services/supabaseApi'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 
 const recordId = computed(() => route.query.record_id || null)
 
@@ -14,6 +18,7 @@ const source = ref('')
 
 const loading = ref(true)
 const err = ref('')
+const localRecordId = ref(null) // New ref to store recordId from localStorage
 
 const scoreBefore = ref(5) 
 const scoreAfter = ref(3)  
@@ -23,9 +28,27 @@ const thoughtAfter = ref('')
 onMounted(async () => {
   try {
     loading.value = true
+    
+    // 1. Restore User ID
+    if (!store.userId) {
+      let anon = localStorage.getItem('anon_id')
+      if (!anon) { 
+        // Try to get from supa auth if logged in
+        const user = await getOrCreateUser(null).catch(() => null)
+        if (user) store.userId = user
+        else {
+           anon = uuid(); localStorage.setItem('anon_id', anon)
+           store.userId = await getOrCreateUser(anon)
+        }
+      } else {
+        store.userId = await getOrCreateUser(anon)
+      }
+    }
 
+    // 2. Resolve Record ID (URL > LocalStorage)
     if (recordId.value) {
-      // Logic for fetching by recordId would go here
+      localRecordId.value = recordId.value
+      // Logic for fetching by recordId would go here (omitted for now as per original)
       const raw = localStorage.getItem('selected_task')
       if (raw) {
         task.value = JSON.parse(raw)
@@ -34,6 +57,12 @@ onMounted(async () => {
         source.value = 'unknown'
       }
     } else {
+      // Try to find last scheduled record
+      const storedRid = localStorage.getItem('last_record_id')
+      if (storedRid) {
+        localRecordId.value = storedRid
+      }
+
       const raw = localStorage.getItem('selected_task')
       if (raw) {
         task.value = JSON.parse(raw)
@@ -56,26 +85,61 @@ function clamp01(x, min, max) {
 }
 
 async function onSubmit() {
+  if (!store.userId) {
+    // Try one last time
+    try {
+        const anon = localStorage.getItem('anon_id')
+        if(anon) store.userId = await getOrCreateUser(anon)
+    } catch(e) {}
+    
+    if(!store.userId) {
+        alert('無法辨識使用者身分，請重新登入或重試')
+        return
+    }
+  }
+  
+  if (!task.value && !localRecordId.value) {
+    alert('找不到任務資訊，無法提交')
+    return
+  }
+
   try {
-    const payload = {
-      record_id: recordId.value || null,
-      task_title: task.value?.title || '（臨時任務）',
-      task_category: task.value?.category || null,
-      score_before: clamp01(scoreBefore.value, 0, 10),
-      score_after: clamp01(scoreAfter.value, 0, 10),
-      thought_before: thoughtBefore.value?.trim() || null,
-      thought_after: thoughtAfter.value?.trim() || null,
-      source: source.value,
+    let finalRecordId = localRecordId.value
+
+    // If no recordId (Immediate Completion or from Nav), create a schedule record first (recorded as "now")
+    if (!finalRecordId) {
+      if (!task.value.task_id) throw new Error('任務資訊不完整 (缺少 task_id)')
+      
+      const nowISO = new Date().toISOString()
+      finalRecordId = await scheduleTask(
+        store.userId, 
+        task.value.task_id, 
+        nowISO, 
+        [] // No notification needed for immediate completion
+      )
+      
+      if (!finalRecordId) throw new Error('無法建立任務紀錄')
+      console.log('Created immediate record:', finalRecordId)
     }
 
-    // await saveCbtRecord(payload)
-    console.log('CBT Submit =>', payload)
+    await completeWithCBT(store.userId, finalRecordId, {
+        thought_before: thoughtBefore.value,
+        anxiety_before: scoreBefore.value,
+        anxiety_after: scoreAfter.value,
+        feeling_after: thoughtAfter.value
+    })
+
+    // Clear local state so "In Progress" doesn't show this task again
+    localStorage.removeItem('selected_task')
+    localStorage.removeItem('scheduled_time')
+    localStorage.removeItem('last_record_id')
+    store.resetFlow()
 
     alert('已提交完成紀錄！')
     router.push('/dashboard') 
   } catch (e) {
     console.error(e)
-    alert('提交失敗：' + (e?.message || e))
+    alert('提交失敗（資料庫存取錯誤）：' + (e?.message || e))
   }
 }
 </script>

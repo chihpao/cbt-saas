@@ -68,19 +68,18 @@ function goNext() {
   <AppLayout>
     <div class="max-w-2xl mx-auto">
       <div class="mb-8 text-center md:text-left">
-        <h1 class="text-2xl font-bold text-gray-900">確認時間</h1>
-        <div class="h-1 w-16 bg-indigo-500 rounded mt-2 mx-auto md:mx-0"></div>
-        <p class="mt-2 text-gray-500">為這項活動安排一個合適的時間。</p>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">確認時間</h1>
+        <p class="mt-2 text-gray-500 text-lg">為這項活動安排一個合適的時間。</p>
       </div>
 
-      <p v-if="err" class="text-sm text-red-600 mb-4 bg-red-50 p-3 rounded-lg flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      <p v-if="err" class="text-sm text-red-600 mb-6 bg-red-50 p-4 rounded-xl flex items-center gap-2 font-medium">
+        <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         {{ err }}
       </p>
 
-      <div v-if="ready && task" class="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 space-y-6">
+      <div v-if="ready && task" class="bg-white/80 backdrop-blur-xl rounded-[2rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-indigo-50/50 space-y-8">
         <!-- Task Info -->
-        <div class="flex items-start justify-between border-b border-gray-100 pb-6">
+        <div class="flex items-start justify-between border-b border-gray-100 pb-8">
           <div>
             <h2 class="text-xl font-bold text-gray-800">{{ task.title }}</h2>
             <p class="text-gray-500 text-sm mt-1">
