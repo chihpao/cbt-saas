@@ -2,8 +2,8 @@
   <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
     <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 space-y-8">
       <div class="text-center">
-        <h2 class="text-2xl font-bold text-gray-900">創建新帳戶</h2>
-        <p class="mt-2 text-sm text-gray-500">開始您的 CBT 練習旅程</p>
+        <h2 class="text-2xl font-bold text-gray-900">建立新帳戶</h2>
+        <p class="mt-2 text-sm text-gray-500">立即開始您的 CBT 練習旅程</p>
       </div>
 
       <div class="mt-8 space-y-6">
@@ -48,7 +48,7 @@
           <div class="flex items-center">
             <input id="terms" v-model="terms" name="terms" type="checkbox" required class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
             <label for="terms" class="ml-2 block text-sm text-gray-900">
-              我同意 <router-link to="/terms" class="text-indigo-600 hover:text-indigo-500 font-medium">服務條款</router-link> 和 <router-link to="/privacy" class="text-indigo-600 hover:text-indigo-500 font-medium">隱私政策</router-link>
+              我同意<router-link to="/terms" class="text-indigo-600 hover:text-indigo-500 font-medium">服務條款</router-link>與<router-link to="/privacy" class="text-indigo-600 hover:text-indigo-500 font-medium">隱私政策</router-link>
             </label>
           </div>
 
@@ -70,7 +70,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import googleIconUrl from '@/assets/google.svg?url'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -93,7 +93,7 @@ const signUpWithGoogle = async () => {
       }
     })
     if (error) throw error
-  } catch (error) {
+  } catch (error: any) {
     console.error('Google 註冊錯誤:', error.message)
     alert('Google 註冊失敗: ' + error.message)
   }
@@ -106,7 +106,7 @@ const handleRegister = async () => {
       throw new Error('密碼不匹配')
     }
 
-    const { data: authData, error: authError } = await supa.auth.signUp({
+    const { error: authError } = await supa.auth.signUp({
       email: email.value,
       password: password.value,
       options: {
@@ -120,9 +120,9 @@ const handleRegister = async () => {
 
     if (authError) throw authError
 
-    alert('註冊成功！請檢查您的電子郵件以驗證您的帳戶。')
+    alert('註冊成功！請檢查您的電子郵件以驗證您的帳號。')
     router.push('/login')
-  } catch (error) {
+  } catch (error: any) {
     console.error('註冊錯誤:', error.message)
     alert('註冊失敗: ' + error.message)
   }

@@ -34,7 +34,7 @@
             </div>
             <div>
               <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密碼</label>
-              <input id="password" v-model="password" name="password" type="password" autocomplete="current-password" required class="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" placeholder="••••••••">
+              <input id="password" v-model="password" name="password" type="password" autocomplete="current-password" required class="appearance-none block w-full px-4 py-3 border border-gray-200 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" placeholder="••••••">
             </div>
           </div>
 
@@ -71,7 +71,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import googleIconUrl from '@/assets/google.svg?url'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -90,7 +90,7 @@ const signInWithGoogle = async () => {
       }
     })
     if (error) throw error
-  } catch (error) {
+  } catch (error: any) {
     console.error('Google 登入錯誤:', error.message)
     alert('Google 登入失敗: ' + error.message)
   }
@@ -104,7 +104,7 @@ const handleLogin = async () => {
     })
     if (error) throw error
     router.push('/')
-  } catch (error) {
+  } catch (error: any) {
     console.error('登入錯誤:', error.message)
     alert('登入失敗: ' + error.message)
   }

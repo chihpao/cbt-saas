@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { supa } from '@/services/supaClient'
+import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
+import { supa } from '@/services/supaClient.ts'
 
 const routes = [
   {
@@ -20,16 +21,6 @@ const routes = [
   {
     path: '/tasks',
     component: () => import('../views/TaskPicker.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/schedule',
-    component: () => import('../views/Schedule.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/notify',
-    component: () => import('../views/Notify.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -55,7 +46,7 @@ const routes = [
   {
     path: '/logout',
     redirect: '/',
-    beforeEnter: async (to, from, next) => {
+    beforeEnter: async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
       await supa.auth.signOut()
       next('/')
     }
@@ -68,7 +59,7 @@ const router = createRouter({
 })
 
 // 路由守衛：檢查用戶是否已登入
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const { data: { session } } = await supa.auth.getSession()
 
   if (to.meta.requiresAuth && !session) {
