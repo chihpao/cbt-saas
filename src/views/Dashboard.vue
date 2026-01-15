@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { v4 as uuid } from 'uuid'
 import { useAppStore } from '../stores/app'
+import { supa } from '@/services/supaClient'
 import { stats, getOrCreateUser, getRecentCompletedRecords, getPendingRecords } from '../services/supabaseApi'
 import AnxietyChart from '@/components/dashboard/AnxietyChart.vue'
 import InsightPanel from '@/components/dashboard/InsightPanel.vue'
@@ -20,13 +21,22 @@ const err = ref('')
 
 onMounted(async () => {
   try {
-    if (!store.userId) {
-      let anon = localStorage.getItem('anon_id')
-      if (!anon) {
-        anon = uuid()
-        localStorage.setItem('anon_id', anon)
+    // 1. First, try to get the active session (Authenticated User)
+    const { data: { session } } = await supa.auth.getSession()
+    
+    if (session?.user) {
+      store.userId = session.user.id
+      localStorage.removeItem('anon_id') 
+    } else {
+      // 2. Fallback to Anonymous User (Only if not logged in)
+      if (!store.userId) {
+        let anon = localStorage.getItem('anon_id')
+        if (!anon) {
+          anon = uuid()
+          localStorage.setItem('anon_id', anon)
+        }
+        store.userId = await getOrCreateUser(anon)
       }
-      store.userId = await getOrCreateUser(anon)
     }
     
     const [statsData, records, pending] = await Promise.all([

@@ -20,6 +20,7 @@ export interface TaskRecord {
   thought_before?: string
   feeling_after?: string
   belief_adjustment?: string
+  distortions?: string[]
 }
 
 export interface Stats {

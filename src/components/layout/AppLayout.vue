@@ -3,10 +3,13 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentUser, signOut, supa } from '@/services/supaClient'
 import type { User } from '@supabase/supabase-js'
+import logoUrl from '@/assets/logo.svg?url'
+import SafetyModal from '@/components/common/SafetyModal.vue'
 
 const router = useRouter()
 const user = ref<User | null>(null)
 const isUserMenuOpen = ref(false)
+const isSafetyModalOpen = ref(false)
 
 // 1. Persist Collapsed State
 const isCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true')
@@ -34,6 +37,12 @@ onMounted(async () => {
 })
 
 const navItems = computed(() => [
+  {
+    name: '首頁',
+    path: '/home',
+    match: (p: string) => p === '/home',
+    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
+  },
   {
     name: '任務',
     path: '/tasks',
@@ -71,8 +80,8 @@ const navItems = computed(() => [
           class="flex items-center justify-between w-full transition-opacity duration-200"
           :class="isCollapsed ? 'opacity-0 pointer-events-none absolute invisible' : 'opacity-100 delay-100 relative'"
         >
-          <div class="flex items-center gap-3 cursor-pointer shrink-0" @click="router.push('/dashboard')">
-            <img src="/logo.svg" alt="Logo" class="w-8 h-8 hover:rotate-12 transition-transform" />
+          <div class="flex items-center gap-3 cursor-pointer shrink-0" @click="router.push('/home')">
+            <img :src="logoUrl" alt="Logo" class="w-8 h-8 hover:rotate-12 transition-transform" />
             <span class="text-lg font-black tracking-tight text-gray-900 whitespace-nowrap">CBT 小幫手</span>
           </div>
           
@@ -151,6 +160,33 @@ const navItems = computed(() => [
         </router-link>
       </nav>
 
+      <!-- Safety Button -->
+      <div class="px-3 pb-2">
+        <button 
+          @click="isSafetyModalOpen = true"
+          class="w-full flex items-center h-12 rounded-2xl transition-all duration-200 ease-out active:scale-95 shrink-0 overflow-hidden group hover:bg-red-50 text-red-400 hover:text-red-600"
+          :class="isCollapsed ? 'justify-center px-0' : 'px-4 gap-4'"
+        >
+          <svg class="w-6 h-6 shrink-0 transition-transform duration-300 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span 
+            class="font-black text-sm whitespace-nowrap transition-all duration-200 origin-left"
+            :class="isCollapsed ? 'opacity-0 w-0 translate-x-4' : 'opacity-100 w-auto translate-x-0'"
+          >
+            緊急求助
+          </span>
+          
+          <!-- Tooltip (Collapsed) -->
+           <span 
+            v-if="isCollapsed"
+            class="absolute bottom-1 right-1 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap shadow-sm z-[60] scale-75 group-hover:scale-100 origin-top-left"
+          >
+            求助
+          </span>
+        </button>
+      </div>
+
       <!-- User Profile (Bottom) -->
       <div class="p-3 border-t border-gray-100 relative">
         <div v-if="user" class="relative">
@@ -199,11 +235,16 @@ const navItems = computed(() => [
       <!-- Mobile Header (Visible only on small screens) -->
       <header class="md:hidden flex items-center justify-between px-4 py-3 bg-white/80 backdrop-blur-md border-b border-gray-100 z-40 sticky top-0">
          <div class="flex items-center gap-2">
-           <img src="/logo.svg" alt="Logo" class="w-8 h-8" />
+           <img :src="logoUrl" alt="Logo" class="w-8 h-8" />
            <span class="text-lg font-black text-gray-900">CBT 小幫手</span>
          </div>
-         <div v-if="user" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
-            {{ user.email?.substring(0, 2).toUpperCase() }}
+         <div class="flex items-center gap-3">
+           <button @click="isSafetyModalOpen = true" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 active:scale-95 transition-all">
+             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+           </button>
+           <div v-if="user" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
+              {{ user.email?.substring(0, 2).toUpperCase() }}
+           </div>
          </div>
       </header>
 
@@ -237,6 +278,9 @@ const navItems = computed(() => [
         <div v-if="item.match($route.path)" class="absolute inset-x-6 top-1/2 -translate-y-1/2 h-8 bg-indigo-50 rounded-full -z-0 blur-md"></div>
       </router-link>
     </div>
+
+    <!-- Modals -->
+    <SafetyModal :is-open="isSafetyModalOpen" @close="isSafetyModalOpen = false" />
   </div>
 </template>
 

@@ -8,10 +8,11 @@ import {
   createCustomTaskDB,
   addEphemeralTask,
   deleteCustomTask,
-  getOrCreateUser
+  ensureCurrentUser
 } from '@/services/supabaseApi'
 import { useNotificationStore } from '@/stores/notification'
 import { useAppStore } from '@/stores/app'
+import { supa } from '@/services/supaClient'
 import { v4 as uuid } from 'uuid'
 import IconTaskList from '@/components/icons/IconTaskList.vue'
 import ScheduleModal from '@/components/common/ScheduleModal.vue'
@@ -131,14 +132,7 @@ async function onAddCustom() {
 }
 
 async function pickTask(t: Task) {
-  if (!store.userId) {
-    let anon = localStorage.getItem('anon_id')
-    if (!anon) {
-      anon = uuid()
-      localStorage.setItem('anon_id', anon)
-    }
-    store.userId = await getOrCreateUser(anon)
-  }
+  await ensureCurrentUser()
   targetTask.value = t
   showScheduleModal.value = true
 }

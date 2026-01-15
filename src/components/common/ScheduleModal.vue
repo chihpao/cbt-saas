@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { Task } from '@/types'
-import { scheduleTask } from '@/services/supabaseApi'
+import { scheduleTask, getOrCreateUser, createCustomTaskDB, ensureCurrentUser } from '@/services/supabaseApi'
+import { supa } from '@/services/supaClient'
 import { useNotificationStore } from '@/stores/notification'
 import { useAppStore } from '@/stores/app'
 
@@ -35,13 +36,30 @@ async function onConfirm() {
   if (!props.task || !scheduledTime.value) return
   saving.value = true
   try {
+    // 1. Resolve User ID (Stable)
+    const uid = await ensureCurrentUser()
+    store.userId = uid
+
+    // CRITICAL FIX: Handle Ephemeral Tasks (String ID) -> Promote to DB Task (Number ID)
+    let finalTaskId = props.task.task_id
+    if (typeof finalTaskId === 'string' && finalTaskId.startsWith('tmp_')) {
+        console.log('[DEBUG] Promoting ephemeral task to DB...')
+        // Create the task in DB first
+        const newTask = await createCustomTaskDB(props.task.title, props.task.category)
+        finalTaskId = newTask.task_id
+        console.log('[DEBUG] Promoted to Task ID:', finalTaskId)
+    }
+
     const isoTime = new Date(scheduledTime.value).toISOString()
-    await scheduleTask(store.userId, props.task.task_id, isoTime, [])
+    // Ensure ID is passed as number if possible, though JS allows loose types, DB is strict
+    await scheduleTask(uid, Number(finalTaskId), isoTime, [])
+    
     successData.value = { title: props.task.title, time: isoTime }
     step.value = 'success'
     emit('saved')
-  } catch {
-    notification.show('失敗', 'error')
+  } catch (e: any) {
+    console.error('[Schedule Error]', e)
+    notification.show('失敗: ' + (e.message || '未知錯誤'), 'error')
   } finally {
     saving.value = false
   }

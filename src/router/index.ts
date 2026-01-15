@@ -29,6 +29,11 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/home',
+    component: () => import('../views/Home.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/dashboard',
     component: () => import('../views/Dashboard.vue'),
     meta: { requiresAuth: true }
@@ -66,8 +71,8 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
     // 如果路由需要登入但用戶未登入，則重定向到登入頁面
     next('/login')
   } else if ((to.path === '/login' || to.path === '/register' || to.path === '/') && session) {
-    // 如果用戶已登入但嘗試訪問登入、註冊或首頁，則重定向到儀表板
-    next('/dashboard')
+    // 如果用戶已登入但嘗試訪問登入、註冊或首頁，則重定向到 Home
+    next('/home')
   } else {
     // 否則繼續導航
     next()

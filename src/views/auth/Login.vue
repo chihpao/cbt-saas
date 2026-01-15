@@ -2,7 +2,7 @@
   <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
     <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 space-y-8">
       <div class="text-center">
-        <img src="/logo.svg" alt="CBT 小幫手" class="h-10 w-10 mx-auto mb-4"/>
+        <img :src="logoUrl" alt="CBT 小幫手" class="h-10 w-10 mx-auto mb-4"/>
         <h2 class="text-2xl font-bold text-gray-900">歡迎回到 CBT 小幫手</h2>
         <p class="mt-2 text-sm text-gray-500">登入您的帳戶以繼續練習</p>
       </div>
@@ -73,6 +73,7 @@
 
 <script setup lang="ts">
 import googleIconUrl from '@/assets/google.svg?url'
+import logoUrl from '@/assets/logo.svg?url'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supa } from '@/services/supaClient'

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentUser, signOut, supa } from '@/services/supaClient'
+import logoUrl from '@/assets/logo.svg?url'
 import IconBrain from '@/components/icons/IconBrain.vue'
 import IconDevices from '@/components/icons/IconDevices.vue'
 import IconShield from '@/components/icons/IconShield.vue'
@@ -99,7 +100,7 @@ onMounted(() => {
     <header class="sticky top-0 z-50 px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100/50 supports-[backdrop-filter]:bg-white/60 transition-all duration-300">
       <div class="max-w-5xl mx-auto flex justify-between items-center">
         <div class="flex items-center gap-2 group cursor-default">
-          <img src="/logo.svg" alt="CBT 小幫手" class="h-8 w-8 transition-transform duration-300 group-hover:rotate-12" />
+          <img :src="logoUrl" alt="CBT 小幫手" class="h-8 w-8 transition-transform duration-300 group-hover:rotate-12" />
           <span class="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 tracking-tight">CBT 小幫手</span>
         </div>
         <div v-if="user" class="flex items-center gap-4">

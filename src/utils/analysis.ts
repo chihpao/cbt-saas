@@ -54,5 +54,31 @@ export function generateInsights(records: TaskRecord[]): Insight[] {
     })
   }
 
+  // 4. 認知謬誤分析 (Cognitive Distortions)
+  const allDistortions = completed.flatMap(r => r.distortions || [])
+  if (allDistortions.length > 0) {
+    const counts: Record<string, number> = {}
+    allDistortions.forEach(d => counts[d] = (counts[d] || 0) + 1)
+    
+    const mostFrequent = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
+    
+    const labelMap: Record<string, string> = {
+      'all_or_nothing': '非黑即白',
+      'catastrophizing': '災難化思考',
+      'emotional_reasoning': '情緒化推理',
+      'mind_reading': '讀心術',
+      'should_statements': '應該/必須',
+      'personalization': '個人化'
+    }
+
+    if (mostFrequent && mostFrequent[1] >= 2) {
+      insights.push({
+        title: `注意到思考慣性：${labelMap[mostFrequent[0]] || mostFrequent[0]}`,
+        content: `最近您有 ${mostFrequent[1]} 次反思中提到了這個思考陷阱。識別它是改變的第一步，下次出現類似想法時，試著問問自己：有其他可能的解釋嗎？`,
+        type: 'suggestion'
+      })
+    }
+  }
+
   return insights
 }
