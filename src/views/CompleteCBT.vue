@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { v4 as uuid } from 'uuid'
 import { useAppStore } from '../stores/app'
 import { useNotificationStore } from '@/stores/notification'
 import {
   completeWithCBT,
-  getOrCreateUser,
   scheduleTask,
   getPendingRecords,
   listTasks,
@@ -20,19 +18,14 @@ const router = useRouter()
 const store = useAppStore()
 const notification = useNotificationStore()
 
-const recordIdQuery = computed(() => route.query.record_id || null)
-
-// View State: 'loading', 'list', 'form', 'empty'
-const viewMode = ref<'loading' | 'list' | 'form' | 'empty'>('loading')
-
-// Data
+const step = ref(1) // 1: List, 2: Anxiety Before, 3: Thought, 4: Distortions, 5: Outcome
 const pendingTasks = ref<JoinedTaskRecord[]>([])
-const selectedRecord = ref<TaskRecord | null>(null) // The record being completed
-const task = ref<Partial<Task> | null>(null) // The task definition (title, category)
+const selectedRecord = ref<TaskRecord | null>(null)
+const task = ref<Partial<Task> | null>(null)
 
 // Form Data
-const scoreBefore = ref(5)
-const scoreAfter = ref(3)
+const anxietyBefore = ref(5)
+const anxietyAfter = ref(3)
 const thoughtBefore = ref('')
 const thoughtAfter = ref('')
 const selectedDistortions = ref<string[]>([])
@@ -47,246 +40,219 @@ const distortions = [
 ]
 
 onMounted(async () => {
-  console.log('[DEBUG] CompleteCBT Mounted')
-  try {
-    store.userId = await ensureCurrentUser()
-    console.log('[DEBUG] Resolved User ID:', store.userId)
-
-    if (recordIdQuery.value) {
-      await loadRecordForForm(Number(recordIdQuery.value))
-    } else {
-      console.log('[DEBUG] Calling loadPendingList...')
-      await loadPendingList()
-    }
-  } catch (e: unknown) {
-    console.error('[DEBUG] Critical Error in onMounted:', e)
-    viewMode.value = 'empty'
+  store.userId = await ensureCurrentUser()
+  await loadPendingList()
+  
+  if (route.query.record_id) {
+    const r = pendingTasks.value.find(p => p.record_id === Number(route.query.record_id))
+    if (r) selectTask(r)
   }
 })
 
 async function loadPendingList() {
-  viewMode.value = 'loading'
   try {
-    console.log('[DEBUG] Loading Pending List for:', store.userId)
-    
-    // 1. Get Records
     const records = await getPendingRecords(store.userId)
-    console.log('[DEBUG] Raw Records from DB:', records)
-
-    // 2. Get Tasks Definition
     const allTasks = await listTasks()
-    
-    // 3. Join them
-    let joined: JoinedTaskRecord[] = records.map((r) => {
+    pendingTasks.value = records.map((r) => {
       const t = allTasks.find((at) => String(at.task_id) === String(r.task_id))
       return {
         ...r,
         task_title: t ? t.title : `未知任務 (${r.task_id})`,
-        task_category: t ? t.category : '其他'
+        task_category: t ? t.category : '一般'
       }
     })
-    console.log('[DEBUG] Joined Data:', joined)
-
-    if (joined.length > 0) {
-      pendingTasks.value = joined
-      viewMode.value = 'list'
-    } else {
-      console.warn('[DEBUG] No pending tasks found.')
-      viewMode.value = 'empty'
-    }
   } catch (e) {
-    console.error('[DEBUG] Load Error:', e)
-    viewMode.value = 'empty'
-  }
-}
-
-async function loadRecordForForm(rid: number) {
-  viewMode.value = 'loading'
-  try {
-    const records = await getPendingRecords(store.userId)
-    const r = records.find((x) => x.record_id == rid)
-
-    if (r) {
-      const allTasks = await listTasks()
-      const t = allTasks.find((at) => String(at.task_id) === String(r.task_id))
-      selectedRecord.value = r
-      task.value = t || { title: '未知任務', category: '其他' }
-      viewMode.value = 'form'
-    } else {
-      viewMode.value = 'empty'
-    }
-  } catch (e) {
-    viewMode.value = 'empty'
+    console.error('Load Error:', e)
   }
 }
 
 function selectTask(record: JoinedTaskRecord) {
   selectedRecord.value = record
   task.value = { title: record.task_title, category: record.task_category }
-  viewMode.value = 'form'
+  step.value = 2
 }
 
 async function onSubmit() {
   if (!store.userId) return
   try {
     let finalRecordId = selectedRecord.value?.record_id
-    if (!finalRecordId || finalRecordId === -1) {
-      if (!task.value?.task_id) throw new Error()
-      const nowISO = new Date().toISOString()
-      finalRecordId = await scheduleTask(store.userId, task.value.task_id, nowISO, [])
-    }
-    await completeWithCBT(store.userId, finalRecordId || -1, {
+    if (!finalRecordId) throw new Error('No record ID')
+
+    await completeWithCBT(store.userId, finalRecordId, {
       thought_before: thoughtBefore.value,
-      anxiety_before: scoreBefore.value,
-      anxiety_after: scoreAfter.value,
+      anxiety_before: anxietyBefore.value,
+      anxiety_after: anxietyAfter.value,
       feeling_after: thoughtAfter.value,
       distortions: selectedDistortions.value
     })
-    localStorage.removeItem('selected_task')
-    localStorage.removeItem('scheduled_time')
-    store.resetFlow()
-    notification.show('已完成反思', 'success')
+    
+    notification.show('反思已完成', 'success')
     router.push('/dashboard')
   } catch (e: any) {
-    console.error('Submit Error:', e)
-    notification.show('提交失敗: ' + (e.message || '未知錯誤'), 'error')
+    notification.show('錯誤：' + e.message, 'error')
   }
 }
+
+const progress = computed(() => {
+  if (step.value === 1) return 0
+  return ((step.value - 2) / 3) * 100
+})
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div class="max-w-2xl mx-auto min-h-[60vh] md:min-h-[80vh] flex flex-col justify-center animate-in fade-in duration-500 pb-24 md:pb-0">
+    
+    <!-- Step 1: Selection List -->
+    <div v-if="step === 1" class="space-y-6">
+      <h1 class="text-3xl font-bold text-gray-900 tracking-tight">專注時光</h1>
+      <p class="text-gray-500">選擇一個任務來進行反思。</p>
       
-      <!-- Loading -->
-      <div v-if="viewMode === 'loading'" class="flex justify-center py-20">
-        <div class="w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div v-if="pendingTasks.length === 0" class="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+        <p class="text-gray-400 font-medium">目前沒有待處理的任務。</p>
+        <button @click="router.push('/tasks')" class="mt-4 text-indigo-600 font-bold text-sm hover:underline">建立新任務</button>
       </div>
 
-      <!-- List Mode -->
-      <div v-else-if="viewMode === 'list'" class="space-y-4">
-        <!-- DEBUG DUMP -->
-        <pre class="bg-gray-100 p-2 text-xs rounded hidden">{{ pendingTasks }}</pre>
-
-        <div
-          v-for="item in pendingTasks"
+      <div class="space-y-3">
+        <button 
+          v-for="item in pendingTasks" 
           :key="item.record_id"
-          class="group relative bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:border-indigo-200 transition-all duration-500 cursor-pointer overflow-hidden active:scale-[0.98]"
           @click="selectTask(item)"
+          class="w-full text-left p-5 bg-white border border-gray-200 rounded-xl hover:border-indigo-600 hover:shadow-md transition-all group"
         >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-5">
-              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                <IconCheckCircle class="w-6 h-6" />
-              </div>
-              <div>
-                <h3 class="font-black text-gray-800 text-lg group-hover:text-indigo-600 transition-colors">{{ item.task_title }}</h3>
-                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-indigo-400 transition-colors">{{ item.task_category }}</span>
-              </div>
-            </div>
-            <div class="opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-               <div class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black">開始反思</div>
-            </div>
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ item.task_title }}</span>
+            <span class="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded">{{ item.task_category }}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Form Mode -->
-      <div v-else-if="viewMode === 'form'" class="bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl shadow-gray-200/50 border border-white space-y-12">
-        <div class="flex items-center justify-between">
-            <h2 class="text-3xl font-black text-gray-900 tracking-tight">{{ task?.title }}</h2>
-            <button @click="loadPendingList" class="text-gray-400 hover:text-gray-900 transition-colors">
-                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-        </div>
-
-        <form @submit.prevent="onSubmit" class="space-y-12">
-          <!-- Sliders Section -->
-          <div class="space-y-10">
-            <!-- Score Before -->
-            <div class="space-y-4">
-               <div class="flex items-center justify-between">
-                <label class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">執行前焦慮</label>
-                <span class="text-3xl font-black font-mono text-indigo-600">{{ scoreBefore }}</span>
-              </div>
-              <input type="range" min="0" max="10" step="1" v-model.number="scoreBefore" class="w-full accent-indigo-600 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer" />
-            </div>
-
-            <!-- Score After -->
-             <div class="space-y-4">
-               <div class="flex items-center justify-between">
-                <label class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">執行後焦慮</label>
-                <span class="text-3xl font-black font-mono text-emerald-500">{{ scoreAfter }}</span>
-              </div>
-              <input type="range" min="0" max="10" step="1" v-model.number="scoreAfter" class="w-full accent-emerald-500 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer" />
-            </div>
-          </div>
-
-          <!-- Thought Before -->
-          <div>
-            <label class="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3">當時的想法</label>
-            <textarea 
-              v-model="thoughtBefore" 
-              rows="3" 
-              placeholder="當時腦中閃過了什麼念頭？"
-              class="w-full px-6 py-4 rounded-3xl bg-gray-50 border-2 border-transparent focus:border-gray-200 focus:bg-white transition-all outline-none resize-none font-medium text-gray-700"
-            ></textarea>
-          </div>
-
-          <!-- Distortions Section -->
-          <div class="py-2 space-y-4">
-            <div class="flex items-center gap-2">
-               <span class="w-2 h-2 rounded-full bg-orange-400"></span>
-               <label class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">你有注意到這些思考陷阱嗎？</label>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div 
-                v-for="d in distortions" 
-                :key="d.id"
-                @click="selectedDistortions.includes(d.id) ? selectedDistortions = selectedDistortions.filter(x => x !== d.id) : selectedDistortions.push(d.id)"
-                class="p-4 rounded-2xl border-2 cursor-pointer transition-all active:scale-95 flex flex-col gap-1 relative overflow-hidden group"
-                :class="selectedDistortions.includes(d.id) ? 'border-indigo-600 bg-indigo-50' : 'border-gray-100 hover:border-indigo-200 bg-white'"
-              >
-                <div class="flex items-center justify-between relative z-10">
-                  <span class="font-bold text-gray-900 transition-colors" :class="selectedDistortions.includes(d.id) ? 'text-indigo-700' : ''">{{ d.label }}</span>
-                  <div class="transition-all duration-300" :class="selectedDistortions.includes(d.id) ? 'opacity-100 scale-100' : 'opacity-0 scale-50'">
-                    <div class="w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center">
-                      <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                  </div>
-                </div>
-                <p class="text-xs text-gray-500 font-medium leading-relaxed relative z-10">{{ d.desc }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Thought After -->
-          <div>
-            <label class="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3">現在的感受</label>
-             <textarea 
-              v-model="thoughtAfter" 
-              rows="3" 
-              placeholder="做完這件事後，感覺如何？"
-              class="w-full px-6 py-4 rounded-3xl bg-gray-50 border-2 border-transparent focus:border-gray-200 focus:bg-white transition-all outline-none resize-none font-medium text-gray-700"
-            ></textarea>
-          </div>
-
-          <button type="submit" class="w-full py-5 rounded-[2rem] bg-gray-900 text-white font-black text-xl shadow-xl hover:bg-indigo-600 transition-all active:scale-[0.98] hover:-translate-y-1">儲存反思</button>
-        </form>
-      </div>
-
-      <!-- Empty -->
-      <div v-else class="text-center py-24">
-        <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-          <IconCheckCircle class="w-10 h-10 text-gray-200" />
-        </div>
-        <p class="text-gray-400 font-bold">目前沒有待處理的任務</p>
-        <button @click="$router.push('/tasks')" class="mt-8 text-indigo-600 font-black hover:underline">去安排一個？</button>
+        </button>
       </div>
     </div>
-</template>
 
-<style scoped>
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
+    <!-- Wizard Steps -->
+    <div v-else class="bg-white border border-gray-200 rounded-3xl p-8 md:p-10 shadow-xl shadow-gray-200/50 relative overflow-hidden">
+      
+      <!-- Progress Bar -->
+      <div class="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
+        <div class="h-full bg-indigo-600 transition-all duration-500" :style="{ width: `${progress}%` }"></div>
+      </div>
+
+      <!-- Step 2: Anxiety Before -->
+      <div v-if="step === 2" class="space-y-8 py-4">
+        <div class="text-center space-y-2">
+          <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest">步驟 1 / 4</span>
+          <h2 class="text-2xl font-bold text-gray-900">情緒檢測</h2>
+          <p class="text-gray-500">在開始這項任務前，你的焦慮或不適程度有多少？</p>
+        </div>
+        
+        <div class="flex flex-col items-center justify-center py-8">
+           <div class="text-6xl font-black text-indigo-600 mb-8 font-mono">{{ anxietyBefore }}</div>
+           <input type="range" min="0" max="10" v-model.number="anxietyBefore" class="w-full max-w-sm accent-indigo-600 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer" />
+           <div class="flex justify-between w-full max-w-sm mt-2 text-xs text-gray-400 font-bold uppercase">
+             <span>平靜</span>
+             <span>極度焦慮</span>
+           </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Thought Capture -->
+      <div v-if="step === 3" class="space-y-6 py-4">
+        <div class="text-center space-y-2">
+          <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest">步驟 2 / 4</span>
+          <h2 class="text-2xl font-bold text-gray-900">捕捉想法</h2>
+          <p class="text-gray-500">當下你有什麼具體的想法或擔憂？</p>
+        </div>
+        
+        <textarea 
+          v-model="thoughtBefore" 
+          rows="5"
+          class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 rounded-xl outline-none transition-all resize-none text-lg text-gray-800 placeholder-gray-400"
+          placeholder="我當時覺得..."
+          autofocus
+        ></textarea>
+      </div>
+
+      <!-- Step 4: Distortions -->
+      <div v-if="step === 4" class="space-y-6 py-4">
+         <div class="text-center space-y-2">
+          <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest">步驟 3 / 4</span>
+          <h2 class="text-2xl font-bold text-gray-900">識別思維陷阱</h2>
+          <p class="text-gray-500">你是否察覺到以下任何認知偏誤？</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2">
+           <div 
+             v-for="d in distortions" 
+             :key="d.id"
+             @click="selectedDistortions.includes(d.id) ? selectedDistortions = selectedDistortions.filter(x => x !== d.id) : selectedDistortions.push(d.id)"
+             class="p-4 rounded-xl border-2 cursor-pointer transition-all active:scale-95"
+             :class="selectedDistortions.includes(d.id) ? 'border-indigo-600 bg-indigo-50/50' : 'border-gray-100 hover:border-gray-300'"
+           >
+             <div class="flex items-center justify-between mb-1">
+               <span class="font-bold text-sm text-gray-900">{{ d.label }}</span>
+               <div v-if="selectedDistortions.includes(d.id)" class="w-4 h-4 bg-indigo-600 rounded-full flex items-center justify-center">
+                 <svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+               </div>
+             </div>
+             <p class="text-xs text-gray-500">{{ d.desc }}</p>
+           </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Outcome -->
+      <div v-if="step === 5" class="space-y-8 py-4">
+         <div class="text-center space-y-2">
+          <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest">最後一步</span>
+          <h2 class="text-2xl font-bold text-gray-900">結果與轉念</h2>
+          <p class="text-gray-500">完成任務後，你現在感覺如何？</p>
+        </div>
+
+         <div class="space-y-6">
+           <div>
+             <label class="block text-xs font-bold text-gray-400 uppercase mb-2">目前的焦慮程度</label>
+             <div class="flex items-center gap-4">
+               <input type="range" min="0" max="10" v-model.number="anxietyAfter" class="flex-1 accent-indigo-600 h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer" />
+               <span class="text-2xl font-mono font-bold text-gray-900 w-8 text-center">{{ anxietyAfter }}</span>
+             </div>
+           </div>
+           
+           <div>
+             <label class="block text-xs font-bold text-gray-400 uppercase mb-2">轉念後的想法</label>
+             <textarea 
+                v-model="thoughtAfter" 
+                rows="3"
+                class="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 rounded-xl outline-none transition-all resize-none"
+                placeholder="回頭看，其實..."
+              ></textarea>
+           </div>
+         </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex items-center justify-between pt-8 mt-4 border-t border-gray-100">
+         <button 
+           v-if="step > 1" 
+           @click="step--"
+           class="text-sm font-bold text-gray-500 hover:text-gray-900 px-4 py-2"
+         >
+           上一步
+         </button>
+         <div v-else></div> <!-- Spacer -->
+
+         <button 
+           v-if="step < 5" 
+           @click="step++"
+           class="bg-gray-900 text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-black transition-all shadow-lg active:scale-95"
+         >
+           下一步
+         </button>
+         <button 
+           v-else 
+           @click="onSubmit"
+           class="bg-indigo-600 text-white text-sm font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
+         >
+           完成反思
+         </button>
+      </div>
+
+    </div>
+  </div>
+</template>

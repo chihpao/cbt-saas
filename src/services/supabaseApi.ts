@@ -172,7 +172,7 @@ export async function getPendingRecords(userId: string): Promise<TaskRecord[]> {
   
   const { data, error } = await supa
     .from('cbt_record')
-    .select('*')
+    .select('*, task:tasks(title, category)') // Join tasks table
     .eq('user_id', finalUserId)
     .eq('status', 'pending')
     .order('scheduled_time', { ascending: true })
@@ -183,7 +183,7 @@ export async function getPendingRecords(userId: string): Promise<TaskRecord[]> {
   }
   
   console.log('[API] Pending Count:', data.length)
-  return data as TaskRecord[]
+  return data as unknown as TaskRecord[]
 }
 
 /** 取得最近完成的紀錄 */

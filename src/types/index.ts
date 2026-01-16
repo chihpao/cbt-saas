@@ -9,9 +9,10 @@ export interface Task {
 
 export interface TaskRecord {
   record_id: number
-  user_id?: string // Added
+  user_id?: string 
   task_id: string | number
   scheduled_time: string
+  created_at?: string // Added
   status: 'pending' | 'completed'
   notify?: string[]
   // Fields from DB columns
@@ -21,6 +22,11 @@ export interface TaskRecord {
   feeling_after?: string
   belief_adjustment?: string
   distortions?: string[]
+  // Joined fields
+  task?: {
+    title: string
+    category?: string
+  }
 }
 
 export interface Stats {
