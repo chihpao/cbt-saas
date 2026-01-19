@@ -158,17 +158,19 @@ async function pickTask(t: Task) {
     </div>
 
     <!-- Categories -->
-    <div class="mb-8 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-      <div class="flex gap-2">
-        <button
-            v-for="c in categoriesFromTasks"
-            :key="c"
-            @click="selectedCategory = c"
-            class="px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap active:scale-95 border"
-            :class="selectedCategory === c ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
-        >
-            {{ c }}
-        </button>
+    <div class="mb-8 relative group">
+      <div class="overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 mask-gradient" ref="categoryContainer">
+        <div class="flex gap-2">
+          <button
+              v-for="c in categoriesFromTasks"
+              :key="c"
+              @click="selectedCategory = c"
+              class="px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap active:scale-95 border"
+              :class="selectedCategory === c ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+          >
+              {{ c }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -215,9 +217,9 @@ async function pickTask(t: Task) {
 <style scoped>
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
 
-<style scoped>
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.mask-gradient {
+  mask-image: linear-gradient(to right, transparent, black 20px, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black 90%, transparent);
+}
 </style>
