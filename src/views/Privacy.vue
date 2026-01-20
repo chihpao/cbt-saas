@@ -1,129 +1,132 @@
 <template>
-  <AppLayout>
-    <div class="max-w-4xl mx-auto">
-      <div class="mb-8 text-center md:text-left">
-        <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">隱私政策</h1>
-        <p class="mt-2 text-gray-500 text-lg">我們重視並保護您的個人資訊。</p>
+  <div class="min-h-screen bg-[#FDFDFD] font-sans text-slate-900 selection:bg-black selection:text-white relative overflow-hidden">
+    <!-- Global Noise Texture -->
+    <div class="fixed inset-0 opacity-[0.03] pointer-events-none z-50 mix-blend-multiply" 
+         style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');">
+    </div>
+
+    <!-- Navigation Back -->
+    <nav class="fixed top-0 inset-x-0 z-40 h-20 bg-[#FDFDFD]/80 backdrop-blur-xl border-b border-black/5 flex items-center justify-between px-6 md:px-12">
+       <div class="flex items-center gap-3 cursor-pointer group" @click="router.push('/')">
+        <div class="w-8 h-8 bg-black rounded-none flex items-center justify-center text-white font-bold text-sm tracking-tighter group-hover:bg-indigo-600 transition-colors duration-500">
+            C
+        </div>
+        <span class="font-bold text-xl tracking-tighter text-black group-hover:text-indigo-600 transition-colors duration-500">CBT SaaS</span>
+      </div>
+      <button @click="router.push('/')" class="text-sm font-semibold tracking-tight hover:text-indigo-600 transition-colors">BACK TO HOME</button>
+    </nav>
+
+    <div class="max-w-4xl mx-auto pt-40 pb-24 px-6 md:px-12">
+      <div class="mb-16">
+        <div class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full border border-black/10 bg-white shadow-sm mb-6">
+           <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+           <span class="text-[10px] font-bold tracking-widest uppercase text-slate-500">Legal Document</span>
+        </div>
+        <h1 class="text-4xl md:text-6xl font-bold tracking-tighter mb-6">隱私權政策</h1>
+        <p class="text-xl text-slate-500 leading-relaxed max-w-2xl">
+          我們重視並保護您的個人資訊。本政策旨在透明地說明我們如何收集、使用與保護您的數據。
+        </p>
       </div>
 
-      <div class="bg-white/80 backdrop-blur-xl rounded-[2rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-indigo-50/50">
-        <div class="space-y-8 text-gray-700 leading-relaxed">
+      <div class="prose prose-lg prose-slate max-w-none">
+        <div class="space-y-12">
+          
           <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              1. 資訊收集
+            <h2 class="text-2xl font-bold tracking-tight mb-4 flex items-center gap-3">
+              <span class="text-indigo-600 text-sm font-mono translate-y-0.5">01</span>
+              資訊收集
             </h2>
-            <p>我們可能收集以下類型的個人資訊：</p>
-            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-              <li>帳戶資訊：電子郵件地址、姓名（選填）</li>
-              <li>使用數據：應用程式使用統計、活動記錄</li>
-              <li>裝置資訊：裝置型號、作業系統版本、瀏覽器類型</li>
+            <p class="text-slate-600 leading-relaxed">
+              為了提供最佳的 CBT 練習體驗，我們可能收集以下類型的個人資訊：
+            </p>
+            <ul class="list-none pl-0 space-y-3 mt-4 text-slate-600">
+              <li class="flex gap-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0"></span>
+                <span><strong>帳戶資訊：</strong> 當您註冊時提供的電子郵件地址與姓名。</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0"></span>
+                <span><strong>使用數據：</strong> 應用程式內的操作記錄、練習完成度與活動統計。</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0"></span>
+                <span><strong>裝置資訊：</strong> 裝置型號、作業系統版本等技術數據，用於優化系統相容性。</span>
+              </li>
             </ul>
           </section>
 
+          <hr class="border-black/5" />
+
           <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              2. 資訊使用
+            <h2 class="text-2xl font-bold tracking-tight mb-4 flex items-center gap-3">
+              <span class="text-indigo-600 text-sm font-mono translate-y-0.5">02</span>
+              資訊使用
             </h2>
-            <p>我們使用收集的資訊來：</p>
-            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-              <li>提供、維護和改進服務</li>
-              <li>管理帳戶註冊和身分驗證</li>
-              <li>發送技術通知、更新和支援訊息</li>
-              <li>分析使用趨勢以改善用戶體驗</li>
+            <p class="text-slate-600 leading-relaxed">
+              我們僅在必要範圍內使用您的資訊：
+            </p>
+            <div class="grid md:grid-cols-2 gap-6 mt-6">
+               <div class="bg-white p-6 border border-black/5 rounded-xl">
+                  <h3 class="font-bold mb-2">服務提供</h3>
+                  <p class="text-sm text-slate-500">維護系統運作、管理帳戶身分驗證與數據同步。</p>
+               </div>
+               <div class="bg-white p-6 border border-black/5 rounded-xl">
+                  <h3 class="font-bold mb-2">體驗改善</h3>
+                  <p class="text-sm text-slate-500">分析匿名化的使用趨勢，以持續優化介面與功能。</p>
+               </div>
+            </div>
+          </section>
+
+          <hr class="border-black/5" />
+
+          <section>
+            <h2 class="text-2xl font-bold tracking-tight mb-4 flex items-center gap-3">
+              <span class="text-indigo-600 text-sm font-mono translate-y-0.5">03</span>
+              資訊安全
+            </h2>
+            <p class="text-slate-600 leading-relaxed">
+              我們採用業界標準的加密技術（SSL/TLS）傳輸您的數據。資料庫採用端對端加密保護，並實施嚴格的存取控制，確保只有經授權的系統能處理您的請求。
+            </p>
+          </section>
+
+          <hr class="border-black/5" />
+
+          <section>
+            <h2 class="text-2xl font-bold tracking-tight mb-4 flex items-center gap-3">
+              <span class="text-indigo-600 text-sm font-mono translate-y-0.5">04</span>
+              用戶權利
+            </h2>
+            <p class="text-slate-600 leading-relaxed mb-4">
+              您對個人數據擁有完全的掌控權：
+            </p>
+            <ul class="list-none pl-0 space-y-3 text-slate-600">
+              <li class="flex gap-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0"></span>
+                <span>隨時存取或匯出您的個人練習記錄。</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0"></span>
+                <span>要求更正不準確的個人資料。</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2.5 shrink-0"></span>
+                <span>隨時刪除帳戶，這將永久移除所有相關數據。</span>
+              </li>
             </ul>
           </section>
 
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              3. 資訊分享
-            </h2>
-            <p>我們不會出售、租賃或以其他方式向第三方提供您的個人資訊，除非：</p>
-            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-              <li>獲得您的明確同意</li>
-              <li>遵守法律要求</li>
-              <li>保護我們的權利或財產</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              4. 資訊安全
-            </h2>
-            <p>我們採取適當的技術和管理措施來保護您的個人資訊免於未經授權的存取、修改或洩露。</p>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              5. Cookie 與追蹤技術
-            </h2>
-            <p>我們使用 Cookie 和類似技術來：</p>
-            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-              <li>記住您的登入狀態</li>
-              <li>分析網站流量和使用模式</li>
-              <li>提供個人化體驗</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              6. 用戶權利
-            </h2>
-            <p>您有權：</p>
-            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-              <li>存取、更新或刪除您的個人資訊</li>
-              <li>限制或反對資訊處理活動</li>
-              <li>要求資訊轉移</li>
-              <li>撤回同意</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              7. 資料保存
-            </h2>
-            <p>我們僅在必要時保留您的個人資訊，通常不超過帳戶活躍期間。</p>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              8. 兒童隱私
-            </h2>
-            <p>本服務不針對 13 歲以下兒童設計。若發現收集了兒童資料，我們將採取措施刪除該資訊。</p>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              9. 政策更新
-            </h2>
-            <p>我們可能會不時更新此隱私政策。重大變更時，將透過應用程式或電子郵件通知您。</p>
-          </section>
-
-          <section>
-            <h2 class="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
-              10. 聯絡我們
-            </h2>
-            <p>如有隱私政策相關問題，請透過應用程式中的聯絡功能與我們聯繫。</p>
-          </section>
         </div>
-
-        <div class="mt-12 pt-6 border-t border-gray-100 text-center text-sm text-gray-400">
-          <p>最後更新日期：{{ new Date().toLocaleDateString('zh-TW') }}</p>
-        </div>
+      </div>
+      
+      <div class="mt-24 pt-12 border-t border-black/10 flex flex-col md:flex-row justify-between items-center text-sm text-slate-400 font-mono">
+        <p>Last updated: {{ new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+        <p>CBT SaaS Inc. &copy; 2026</p>
       </div>
     </div>
-  </AppLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
-import AppLayout from '@/components/layout/AppLayout.vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 </script>
