@@ -159,7 +159,7 @@ async function pickTask(t: Task) {
 
     <!-- Categories -->
     <div class="mb-8 relative group">
-      <div class="overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 mask-gradient" ref="categoryContainer">
+      <div class="overflow-x-auto pb-2 scrollbar-hide px-0 mask-gradient" ref="categoryContainer">
         <div class="flex gap-2">
           <button
               v-for="c in categoriesFromTasks"
@@ -219,7 +219,7 @@ async function pickTask(t: Task) {
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 .mask-gradient {
-  mask-image: linear-gradient(to right, transparent, black 20px, black 90%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black 90%, transparent);
+  mask-image: linear-gradient(to right, black, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, black, black 90%, transparent);
 }
 </style>

@@ -22,6 +22,7 @@ const step = ref(1) // 1: List, 2: Anxiety Before, 3: Thought, 4: Distortions, 5
 const pendingTasks = ref<JoinedTaskRecord[]>([])
 const selectedRecord = ref<TaskRecord | null>(null)
 const task = ref<Partial<Task> | null>(null)
+const loadingPending = ref(true)
 
 // Form Data
 const anxietyBefore = ref(5)
@@ -40,6 +41,7 @@ const distortions = [
 ]
 
 onMounted(async () => {
+  loadingPending.value = true
   store.userId = await ensureCurrentUser()
   await loadPendingList()
   
@@ -63,6 +65,8 @@ async function loadPendingList() {
     })
   } catch (e) {
     console.error('Load Error:', e)
+  } finally {
+    loadingPending.value = false
   }
 }
 
@@ -107,12 +111,16 @@ const progress = computed(() => {
       <h1 class="text-3xl font-bold text-gray-900 tracking-tight">專注時光</h1>
       <p class="text-gray-500">選擇一個任務來進行反思。</p>
       
-      <div v-if="pendingTasks.length === 0" class="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+      <div v-if="loadingPending" class="space-y-3">
+        <div v-for="i in 3" :key="i" class="h-16 bg-gray-50 rounded-xl border border-gray-100 animate-pulse"></div>
+      </div>
+
+      <div v-else-if="pendingTasks.length === 0" class="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
         <p class="text-gray-400 font-medium">目前沒有待處理的任務。</p>
         <button @click="router.push('/tasks')" class="mt-4 text-indigo-600 font-bold text-sm hover:underline">建立新任務</button>
       </div>
 
-      <div class="space-y-3">
+      <div v-else class="space-y-3">
         <button 
           v-for="item in pendingTasks" 
           :key="item.record_id"
