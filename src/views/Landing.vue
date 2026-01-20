@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentUser, signOut, supa } from '@/services/supaClient'
+import IconBrain from '@/components/icons/IconBrain.vue'
+import IconShield from '@/components/icons/IconShield.vue'
+import IconReflection from '@/components/icons/IconReflection.vue'
+import IconDevices from '@/components/icons/IconDevices.vue'
+import IconClock from '@/components/icons/IconClock.vue'
 import type { User } from '@supabase/supabase-js'
 
 const router = useRouter()
@@ -11,6 +16,9 @@ const user = ref<User | null>(null)
 const lang = ref<'zh' | 'en'>('zh')
 
 const t = computed(() => ({
+  cursor: {
+    view: lang.value === 'zh' ? '瀏覽' : 'View'
+  },
   nav: {
     dashboard: lang.value === 'zh' ? '儀表板' : 'Dashboard',
     signout: lang.value === 'zh' ? '登出' : 'Sign Out',
@@ -33,12 +41,16 @@ const t = computed(() => ({
     title: lang.value === 'zh' ? '核心功能' : 'Core Features',
     c1_title: lang.value === 'zh' ? '認知重塑' : 'Cognitive Restructuring',
     c1_desc: lang.value === 'zh' ? '將混亂的情緒轉化為有序的數據。使用標準化的 CBT 模型，協助你精準識別觸發點、自動化想法與情緒反應。' : 'Transform chaotic emotions into structured data. We use standardized CBT models.',
+    c1_meta: lang.value === 'zh' ? 'CBT 模型 v3' : 'CBT Model v3',
     c2_title: lang.value === 'zh' ? '隱私保護' : 'Privacy Protection',
     c2_desc: lang.value === 'zh' ? '你的心靈是神聖的領域。我們採用軍用級加密技術，確保你的日誌與情緒數據僅有你能存取。' : 'Your mind is a sanctuary. We employ military-grade encryption.',
+    c2_badge: lang.value === 'zh' ? '加密保護中' : 'Encrypted Vault',
     c3_title: lang.value === 'zh' ? '引導式日誌' : 'Guided Journaling',
     c3_desc: lang.value === 'zh' ? '不知道從何開始？我們的適應性引導將帶領你穿越迷霧，協助你拆解核心信念並打破負面迴圈。' : 'Adaptive prompts guide you through the fog.',
     c4_title: lang.value === 'zh' ? '全平台同步' : 'Cross-Platform Sync',
-    c4_desc: lang.value === 'zh' ? '無論身在何處，心理支持隨手可得。數據即時同步於所有裝置。' : 'Real-time data synchronization across all devices.'
+    c4_desc: lang.value === 'zh' ? '無論身在何處，心理支持隨手可得。數據即時同步於所有裝置。' : 'Real-time data synchronization across all devices.',
+    c4_tag1: lang.value === 'zh' ? '多裝置同步' : 'Multi-Device',
+    c4_tag2: lang.value === 'zh' ? '即時更新' : 'Real-time'
   },
   cta: {
     title: lang.value === 'zh' ? '立即開始' : 'START NOW.',
@@ -70,6 +82,9 @@ const cursorHover = ref(false)
 const stickySection = ref<HTMLElement | null>(null)
 const horizontalTrack = ref<HTMLElement | null>(null)
 const scrollProgress = ref(0)
+const heroSpotlightStyle = computed(() => ({
+  backgroundImage: `radial-gradient(700px at ${mouseX.value}px ${mouseY.value}px, rgba(99, 102, 241, 0.16), transparent 65%)`
+}))
 
 const handleMouseMove = (e: MouseEvent) => {
   mouseX.value = e.clientX
@@ -142,6 +157,11 @@ onMounted(async () => {
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('resize', handleScroll)
 
+  if (mouseX.value < 0) {
+    mouseX.value = window.innerWidth / 2
+    mouseY.value = window.innerHeight * 0.45
+  }
+
   // Loader Logic
   let wordIndex = 0
   loadingWord.value = t.value.loader.words[0] || 'INIT...'
@@ -181,18 +201,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#FDFDFD] font-sans text-black selection:bg-black selection:text-white cursor-none relative transition-colors duration-500">
+  <div class="min-h-screen bg-[#F8FAFC] font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-700 relative transition-colors duration-500 md:cursor-none">
     
     <!-- === CUSTOM CURSOR === -->
     <div 
-      class="fixed pointer-events-none z-[9999] mix-blend-difference transition-transform duration-100 ease-out flex items-center justify-center"
+      class="fixed pointer-events-none z-[9999] mix-blend-difference transition-transform duration-100 ease-out hidden md:flex items-center justify-center"
       :style="{ left: mouseX + 'px', top: mouseY + 'px', transform: 'translate(-50%, -50%)' }"
     >
       <div 
         class="bg-white rounded-full transition-all duration-300 ease-out"
-        :class="cursorHover ? 'w-24 h-24 opacity-100' : 'w-4 h-4 opacity-100'"
+        :class="cursorHover ? 'w-20 h-20 opacity-100' : 'w-4 h-4 opacity-100'"
       ></div>
-      <span v-if="cursorHover" class="absolute text-[10px] font-bold tracking-widest text-black uppercase">View</span>
+      <span v-if="cursorHover" class="absolute text-[10px] font-bold tracking-widest text-black uppercase">{{ t.cursor.view }}</span>
     </div>
 
     <!-- === LOADER === -->
@@ -236,11 +256,13 @@ onUnmounted(() => {
     </nav>
 
     <!-- === HERO === -->
-    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-12 pt-20 overflow-hidden bg-[#FDFDFD]">
-       <div class="absolute inset-0 z-0 opacity-0 transition-opacity duration-[2s] delay-700" :class="{ 'opacity-100': isRevealed }">
+    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-12 pt-20 overflow-hidden bg-[#F8FAFC]">
+       <div class="absolute inset-0 z-0 pointer-events-none opacity-0 transition-opacity duration-[2s] delay-700" :class="{ 'opacity-100': isRevealed }">
           <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-          <div class="absolute top-1/4 -right-20 w-[600px] h-[600px] bg-indigo-100 rounded-full blur-[120px] opacity-60 mix-blend-multiply animate-blob"></div>
-          <div class="absolute -bottom-20 -left-20 w-[500px] h-[500px] bg-blue-100 rounded-full blur-[100px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
+          <div class="absolute inset-0 opacity-[0.08]" style="background-image: linear-gradient(rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px); background-size: 120px 120px;"></div>
+          <div class="absolute inset-0 transition-opacity duration-500" :style="heroSpotlightStyle"></div>
+          <div class="absolute top-1/4 -right-24 w-[600px] h-[600px] bg-indigo-100 rounded-full blur-[120px] opacity-60 mix-blend-multiply animate-blob"></div>
+          <div class="absolute -bottom-24 -left-24 w-[520px] h-[520px] bg-blue-100 rounded-full blur-[110px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
        </div>
 
        <div class="relative z-10 w-full flex flex-col justify-center">
@@ -256,7 +278,7 @@ onUnmounted(() => {
              </h1>
           </div>
 
-          <div class="relative z-30 mt-16 max-w-sm opacity-0 transition-opacity duration-1000 delay-[1500ms]" :class="{ 'opacity-100': isRevealed }">
+          <div class="relative z-30 mt-16 max-w-lg opacity-0 translate-y-6 transition-all duration-1000 delay-[1500ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
              <p class="text-sm font-mono leading-relaxed mb-6 whitespace-pre-line text-gray-600">
                 {{ t.hero.sub }}
              </p>
@@ -265,6 +287,7 @@ onUnmounted(() => {
                 {{ t.hero.scroll }}
              </button>
           </div>
+
        </div>
     </header>
 
@@ -298,10 +321,29 @@ onUnmounted(() => {
                    </div>
                    
                    <!-- Interactive Glass Card -->
-                   <div class="md:col-span-4 h-[50vh] w-full bg-white/30 backdrop-blur-2xl border border-white/60 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] flex items-center justify-center relative overflow-hidden group hover:scale-[1.02] transition-transform duration-700">
-                      <div class="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                      <div class="relative z-10 text-center mix-blend-overlay">
-                         <div class="text-8xl mb-6 group-hover:-translate-y-4 transition-transform duration-500">🧠</div>
+                   <div class="md:col-span-4 h-[52vh] w-full bg-white/40 backdrop-blur-2xl border border-white/70 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] flex items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700">
+                      <div class="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                         <div class="absolute -left-1/2 top-1/2 h-[1px] w-[200%] bg-white/40 animate-scan"></div>
+                      </div>
+                      <div class="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center">
+                         <div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/70 bg-white/80 shadow-sm">
+                            <IconBrain class="h-8 w-8 text-gray-900/80" />
+                         </div>
+                         <div class="grid w-52 grid-cols-4 gap-2">
+                            <div class="h-2 rounded-full bg-white/70"></div>
+                            <div class="h-2 rounded-full bg-white/40"></div>
+                            <div class="h-2 rounded-full bg-white/60"></div>
+                            <div class="h-2 rounded-full bg-white/30"></div>
+                            <div class="h-2 rounded-full bg-white/40"></div>
+                            <div class="h-2 rounded-full bg-white/70"></div>
+                            <div class="h-2 rounded-full bg-white/30"></div>
+                            <div class="h-2 rounded-full bg-white/60"></div>
+                         </div>
+                         <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-700/80">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                            <span>{{ t.features.c1_meta }}</span>
+                         </div>
                       </div>
                    </div>
                 </div>
@@ -320,7 +362,7 @@ onUnmounted(() => {
                     transform: `translate(-50%, -50%) scale(${Math.max(1, (scrollProgress - 0.25) * 80)})`,
                     borderWidth: `${Math.max(1, 100 * (0.6 - scrollProgress))}px`, // Border gets thinner as it expands? Or thicker? Let's keep it 1px visual but maybe fading opacity
                     opacity: scrollProgress > 0.6 ? 0 : 1, // Hide after it fills screen to reveal next slide naturally? Or let it BE the white background
-                    backgroundColor: scrollProgress > 0.35 ? '#FFFFFF' : 'transparent', // Turn WHITE at a certain point to fill screen
+                    backgroundColor: scrollProgress > 0.35 ? '#F8FAFC' : 'transparent', // Turn light to fill screen
                     borderColor: scrollProgress > 0.35 ? 'transparent' : '#FFFFFF'
                   }"
                 >
@@ -330,8 +372,8 @@ onUnmounted(() => {
                    <!-- Content fades out as circle expands -->
                    <div :style="{ opacity: Math.max(0, 1 - (scrollProgress - 0.3) * 10) }">
                       <div class="inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12">
-                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                         <span class="text-xs font-mono tracking-widest uppercase">Encrypted Vault</span>
+                         <IconShield class="w-4 h-4 text-emerald-300/90 animate-pulse" />
+                         <span class="text-xs font-mono tracking-widest uppercase">{{ t.features.c2_badge }}</span>
                       </div>
                       <h2 class="text-[12vw] leading-[0.8] font-black tracking-[-0.08em] mb-8">
                          {{ t.features.c2_title }}
@@ -367,19 +409,23 @@ onUnmounted(() => {
                    
                    <div class="relative perspective-1000">
                       <!-- 3D Floating Cards -->
-                      <div class="bg-white p-10 rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-gray-100 rotate-y-12 rotate-x-6 hover:rotate-0 transition-transform duration-700 ease-out">
-                         <div class="flex items-center justify-between mb-8 opacity-50">
-                            <div class="w-8 h-8 rounded-full bg-gray-200"></div>
-                            <div class="w-20 h-2 bg-gray-200 rounded-full"></div>
-                         </div>
-                         <div class="space-y-4">
-                            <div class="h-4 w-full bg-gray-100 rounded-full"></div>
-                            <div class="h-4 w-5/6 bg-gray-100 rounded-full"></div>
-                            <div class="h-4 w-4/6 bg-gray-100 rounded-full"></div>
-                         </div>
-                         <div class="mt-8 flex gap-2">
-                            <div class="h-8 w-20 bg-indigo-50 rounded-lg"></div>
-                            <div class="h-8 w-20 bg-rose-50 rounded-lg"></div>
+                      <div class="animate-float-slow will-change-transform">
+                         <div class="bg-white p-10 rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-gray-100 rotate-y-12 rotate-x-6 hover:rotate-0 transition-transform duration-700 ease-out">
+                            <div class="flex items-center justify-between mb-8">
+                               <div class="w-9 h-9 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-400">
+                                  <IconReflection class="w-5 h-5" />
+                               </div>
+                               <div class="w-20 h-2 bg-gray-200 rounded-full"></div>
+                            </div>
+                            <div class="space-y-4">
+                               <div class="h-4 w-full bg-gray-100 rounded-full"></div>
+                               <div class="h-4 w-5/6 bg-gray-100 rounded-full"></div>
+                               <div class="h-4 w-4/6 bg-gray-100 rounded-full"></div>
+                            </div>
+                            <div class="mt-8 flex gap-2">
+                               <div class="h-8 w-20 bg-indigo-50 rounded-lg"></div>
+                               <div class="h-8 w-20 bg-rose-50 rounded-lg"></div>
+                            </div>
                          </div>
                       </div>
                    </div>
@@ -391,14 +437,24 @@ onUnmounted(() => {
                 <div class="absolute inset-0" style="background-image: linear-gradient(#D4D4D4 1px, transparent 1px), linear-gradient(90deg, #D4D4D4 1px, transparent 1px); background-size: 50px 50px;"></div>
                 
                 <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center">
-                   <div class="mb-16 flex gap-12">
+                   <div class="mb-16 grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12">
                       <div class="group relative">
-                         <div class="w-24 h-24 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-4xl group-hover:-translate-y-4 transition-transform duration-500 z-10 relative">📱</div>
-                         <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                         <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-15 group-hover:opacity-30 transition-opacity"></div>
+                         <div class="relative z-10 w-28 h-28 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-gray-800 group-hover:-translate-y-3 transition-transform duration-500">
+                            <IconDevices class="w-10 h-10" />
+                         </div>
+                         <div class="relative z-10 mt-4 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+                            {{ t.features.c4_tag1 }}
+                         </div>
                       </div>
-                      <div class="group relative mt-12">
-                         <div class="w-24 h-24 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-4xl group-hover:-translate-y-4 transition-transform duration-500 z-10 relative">💻</div>
-                         <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                      <div class="group relative sm:mt-10">
+                         <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-15 group-hover:opacity-30 transition-opacity"></div>
+                         <div class="relative z-10 w-28 h-28 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-gray-800 group-hover:-translate-y-3 transition-transform duration-500">
+                            <IconClock class="w-10 h-10" />
+                         </div>
+                         <div class="relative z-10 mt-4 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+                            {{ t.features.c4_tag2 }}
+                         </div>
                       </div>
                    </div>
                    
@@ -445,7 +501,7 @@ onUnmounted(() => {
           </p>
           <button 
              @click="router.push('/register')" 
-             class="px-16 py-6 bg-white text-black rounded-full font-bold text-xl tracking-widest uppercase hover:bg-indigo-500 hover:text-white transition-all duration-300 hover:scale-105"
+             class="px-16 py-6 bg-white text-black rounded-full font-bold text-xl tracking-widest uppercase shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)] hover:bg-indigo-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_25px_70px_-35px_rgba(79,70,229,0.6)] transition-all duration-300 hover:scale-105"
              @mouseenter="cursorHover = true" @mouseleave="cursorHover = false"
           >
              {{ t.cta.btn }}
@@ -479,9 +535,32 @@ onUnmounted(() => {
 .animate-blob { animation: blob 10s infinite; }
 .animation-delay-2000 { animation-delay: 2s; }
 
+@keyframes scan {
+  0% { transform: translateX(-120%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+.animate-scan { animation: scan 2.8s ease-in-out infinite; }
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
+
 @keyframes spin-slow {
   from { transform: translate(-50%, -50%) rotate(0deg); }
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-scan,
+  .animate-float-slow,
+  .animate-spin-slow {
+    animation: none !important;
+  }
+}
 </style>
