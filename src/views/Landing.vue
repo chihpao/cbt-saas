@@ -16,9 +16,6 @@ const user = ref<User | null>(null)
 const lang = ref<'zh' | 'en'>('zh')
 
 const t = computed(() => ({
-  cursor: {
-    view: lang.value === 'zh' ? '瀏覽' : 'View'
-  },
   nav: {
     dashboard: lang.value === 'zh' ? '儀表板' : 'Dashboard',
     signout: lang.value === 'zh' ? '登出' : 'Sign Out',
@@ -34,7 +31,7 @@ const t = computed(() => ({
     line1: lang.value === 'zh' ? '重塑' : 'REWIRE',
     line2: lang.value === 'zh' ? '你的' : 'YOUR',
     line3: lang.value === 'zh' ? '思維' : 'MINDSET',
-    sub: lang.value === 'zh' ? '數據驅動的現代心理治療工具。\n專為追求卓越的心靈設計。' : 'DATA DRIVEN THERAPY TOOLS.\nDESIGNED FOR THE MODERN MIND.',
+    sub: lang.value === 'zh' ? '數據驅動的現代心理治療工具\n專為追求卓越的心靈設計' : 'DATA DRIVEN THERAPY TOOLS\nDESIGNED FOR THE MODERN MIND',
     scroll: lang.value === 'zh' ? '向下滑動以探索' : 'SCROLL TO EXPLORE'
   },
   features: {
@@ -89,6 +86,22 @@ const heroSpotlightStyle = computed(() => ({
 const handleMouseMove = (e: MouseEvent) => {
   mouseX.value = e.clientX
   mouseY.value = e.clientY
+}
+
+const checkHover = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target) return
+  
+  const tag = target.tagName.toUpperCase()
+  // P, H1-H6, SPAN, LI, B, STRONG, I, EM, SMALL, BLOCKQUOTE
+  const textTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'LI', 'B', 'STRONG', 'I', 'EM', 'SMALL', 'BLOCKQUOTE']
+  // BUTTON, A, INPUT, TEXTAREA, SELECT, LABEL, SVG, PATH
+  const interactiveTags = ['BUTTON', 'A', 'INPUT', 'TEXTAREA', 'SELECT', 'LABEL', 'SVG', 'PATH']
+  
+  const isText = textTags.includes(tag)
+  const isInteractive = interactiveTags.includes(tag) || window.getComputedStyle(target).cursor === 'pointer'
+  
+  cursorHover.value = isText || isInteractive
 }
 
 // Optimized Scroll Handler using requestAnimationFrame
@@ -154,6 +167,7 @@ onMounted(async () => {
   })
 
   window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseover', checkHover)
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('resize', handleScroll)
 
@@ -194,6 +208,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseover', checkHover)
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', handleScroll)
   if (reqId) cancelAnimationFrame(reqId)
@@ -212,7 +227,6 @@ onUnmounted(() => {
         class="bg-white rounded-full transition-all duration-300 ease-out"
         :class="cursorHover ? 'w-20 h-20 opacity-100' : 'w-4 h-4 opacity-100'"
       ></div>
-      <span v-if="cursorHover" class="absolute text-[10px] font-bold tracking-widest text-black uppercase">{{ t.cursor.view }}</span>
     </div>
 
     <!-- === LOADER === -->
@@ -224,7 +238,7 @@ onUnmounted(() => {
        </div>
        <div class="absolute inset-0 flex flex-col justify-between p-12 text-white transition-opacity duration-500" :class="{ 'opacity-0': !isLoading }">
           <div class="flex justify-between font-mono text-xs tracking-widest">
-             <span>CBT-OS</span><span>{{ loadingPercentage }}%</span>
+             <span>CBT SAAS</span><span>{{ loadingPercentage }}%</span>
           </div>
           <div class="text-[8vw] leading-none font-bold tracking-tighter uppercase tabular-nums">
              {{ loadingWord }}
@@ -236,27 +250,27 @@ onUnmounted(() => {
     <!-- === NAVBAR === -->
     <nav class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-6 mix-blend-difference text-white transition-transform duration-1000 delay-1000"
          :class="isLoading ? '-translate-y-full' : 'translate-y-0'">
-      <div class="flex items-center gap-2 cursor-pointer group" @click="router.push('/')" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">
+      <div class="flex items-center gap-2 cursor-pointer group" @click="router.push('/')">
         <div class="w-3 h-3 bg-white rounded-full group-hover:scale-150 transition-transform"></div>
         <span class="font-bold tracking-widest uppercase text-sm">CBT SaaS</span>
       </div>
       
       <div class="flex items-center gap-8">
-        <button @click="toggleLang" class="border border-white/30 rounded-full px-3 py-1 text-[10px] font-bold tracking-widest hover:bg-white hover:text-black transition-all" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">
+        <button @click="toggleLang" class="border border-white/30 rounded-full px-3 py-1 text-[10px] font-bold tracking-widest hover:bg-white hover:text-black transition-all">
           {{ t.nav.switchBtn }}
         </button>
         <template v-if="user">
-          <button @click="router.push('/home')" class="text-xs font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">{{ t.nav.dashboard }}</button>
-          <button @click="handleSignOut" class="text-xs font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">{{ t.nav.signout }}</button>
+          <button @click="router.push('/home')" class="text-xs font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">{{ t.nav.dashboard }}</button>
+          <button @click="handleSignOut" class="text-xs font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">{{ t.nav.signout }}</button>
         </template>
         <template v-else>
-          <button @click="router.push('/login')" class="text-xs font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">{{ t.nav.login }}</button>
+          <button @click="router.push('/login')" class="text-xs font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">{{ t.nav.login }}</button>
         </template>
       </div>
     </nav>
 
     <!-- === HERO === -->
-    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-12 pt-20 overflow-hidden bg-[#F8FAFC]">
+    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-12 overflow-hidden bg-[#F8FAFC]">
        <div class="absolute inset-0 z-0 pointer-events-none opacity-0 transition-opacity duration-[2s] delay-700" :class="{ 'opacity-100': isRevealed }">
           <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
           <div class="absolute inset-0 opacity-[0.08]" style="background-image: linear-gradient(rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px); background-size: 120px 120px;"></div>
@@ -265,27 +279,30 @@ onUnmounted(() => {
           <div class="absolute -bottom-24 -left-24 w-[520px] h-[520px] bg-blue-100 rounded-full blur-[110px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
        </div>
 
-       <div class="relative z-10 w-full flex flex-col justify-center">
-          <div class="max-w-[90vw]">
-             <h1 class="text-[13vw] leading-[0.9] font-black tracking-tighter text-black mix-blend-overlay opacity-0 translate-y-20 transition-all duration-1000 delay-1000" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
+       <div class="relative z-10 w-full flex flex-col justify-center md:block">
+          <div class="max-w-[90vw] md:max-w-none">
+             <h1 class="text-[13vw] xl:text-[11rem] leading-[0.9] font-black tracking-tighter text-black mix-blend-overlay opacity-0 translate-y-20 transition-all duration-1000 delay-1000" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
                 {{ t.hero.line1 }}
              </h1>
-             <h1 class="text-[13vw] leading-[0.9] font-black tracking-tighter text-black ml-[5vw] md:ml-[10vw] mix-blend-overlay opacity-0 translate-y-20 transition-all duration-1000 delay-[1100ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
+             <h1 class="text-[13vw] xl:text-[11rem] leading-[0.9] font-black tracking-tighter text-black ml-[5vw] md:ml-[10vw] mix-blend-overlay opacity-0 translate-y-20 transition-all duration-1000 delay-[1100ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
                 {{ t.hero.line2 }}
              </h1>
-             <h1 class="text-[13vw] leading-[0.9] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-black opacity-0 translate-y-20 transition-all duration-1000 delay-[1200ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
+             <h1 class="text-[13vw] xl:text-[11rem] leading-[0.9] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-black opacity-0 translate-y-20 transition-all duration-1000 delay-[1200ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
                 {{ t.hero.line3 }}
              </h1>
           </div>
 
-          <div class="relative z-30 mt-16 max-w-lg opacity-0 translate-y-6 transition-all duration-1000 delay-[1500ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
-             <p class="text-sm font-mono leading-relaxed mb-6 whitespace-pre-line text-gray-600">
-                {{ t.hero.sub }}
-             </p>
+          <div class="relative z-30 mt-5 md:ml-[10vw] max-w-lg opacity-0 translate-y-6 transition-all duration-1000 delay-[1500ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
              <div class="h-[1px] w-20 bg-black mb-4"></div>
-             <button @click="scrollToFeatures" class="uppercase text-xs font-bold tracking-widest hover:pl-4 transition-all" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">
+             <button @click="scrollToFeatures" class="uppercase text-xs font-bold tracking-widest hover:pl-4 transition-all">
                 {{ t.hero.scroll }}
              </button>
+          </div>
+
+          <div class="relative z-30 mt-16 md:mt-0 md:absolute md:bottom-20 md:right-12 md:text-right max-w-lg opacity-0 translate-y-6 transition-all duration-1000 delay-[1600ms]" :class="{ '!opacity-100 !translate-y-0': isRevealed }">
+             <p class="text-sm font-mono leading-relaxed whitespace-pre-line text-gray-600">
+                {{ t.hero.sub }}
+             </p>
           </div>
 
        </div>
@@ -300,17 +317,26 @@ onUnmounted(() => {
           <div ref="horizontalTrack" class="flex h-full w-full will-change-transform">
              
              <!-- SLIDE 1: Structure (Glass/Blur) -->
-             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F5F5F7]">
+             <div 
+               class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F5F5F7]"
+               :style="{ 
+                  filter: `blur(${Math.max(0, (scrollProgress - 0.15) * 30)}px)`,
+                  transform: `scale(${Math.max(0.9, 1 - Math.max(0, scrollProgress - 0.15) * 0.4)})`,
+                  opacity: 1 - Math.max(0, (scrollProgress - 0.15) * 2)
+               }"
+             >
                 <!-- Dynamic Background -->
                 <div class="absolute top-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-[#E0E0E0] rounded-full blur-[120px] opacity-60 mix-blend-multiply animate-blob"></div>
                 <div class="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-[#D6D6D6] rounded-full blur-[100px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
                 
+                <!-- Background Number -->
+                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none">01</div>
+
                 <div class="relative z-10 w-full max-w-[90vw] grid md:grid-cols-12 gap-8 items-end">
                    <div class="md:col-span-8 relative">
-                      <div class="overflow-hidden mb-4">
-                         <div class="text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-[0.8] text-black/5 select-none absolute -top-32 -left-10 z-0">01</div>
+                      <div class="mb-4">
                          <h2 class="text-6xl md:text-[8vw] font-black tracking-[-0.05em] leading-[0.9] text-black relative z-10 will-change-transform" 
-                             :style="{ transform: `translateY(${scrollProgress * 100}px)` }">
+                             :style="{ transform: `translateY(${Math.max(0, (scrollProgress - 0.1) * 200)}px)` }">
                             {{ t.features.c1_title }}
                          </h2>
                       </div>
@@ -353,6 +379,12 @@ onUnmounted(() => {
              <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-black text-white">
                 <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
                 
+                <!-- Background Number -->
+                <div 
+                  class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none select-none z-1 pointer-events-none transition-colors duration-500"
+                  :class="scrollProgress > 0.35 ? 'text-black/10' : 'text-white/10'"
+                >02</div>
+
                 <!-- THE EXPANDING CIRCLE -->
                 <!-- We want this to expand as we scroll from roughly 0.3 (center of slide 2) to 0.6 (transition to slide 3) -->
                 <!-- Mapping: 0.3 -> 1x, 0.6 -> 60x -->
@@ -360,9 +392,9 @@ onUnmounted(() => {
                   class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] border-[1px] border-white rounded-full flex items-center justify-center transition-transform duration-75 will-change-transform z-0"
                   :style="{ 
                     transform: `translate(-50%, -50%) scale(${Math.max(1, (scrollProgress - 0.25) * 80)})`,
-                    borderWidth: `${Math.max(1, 100 * (0.6 - scrollProgress))}px`, // Border gets thinner as it expands? Or thicker? Let's keep it 1px visual but maybe fading opacity
-                    opacity: scrollProgress > 0.6 ? 0 : 1, // Hide after it fills screen to reveal next slide naturally? Or let it BE the white background
-                    backgroundColor: scrollProgress > 0.35 ? '#F8FAFC' : 'transparent', // Turn light to fill screen
+                    borderWidth: `${Math.max(1, 100 * (0.6 - scrollProgress))}px`,
+                    opacity: scrollProgress > 0.65 ? 0 : Math.max(0, 1 - (scrollProgress - 0.55) * 10),
+                    backgroundColor: scrollProgress > 0.35 ? '#F8FAFC' : 'transparent',
                     borderColor: scrollProgress > 0.35 ? 'transparent' : '#FFFFFF'
                   }"
                 >
@@ -370,15 +402,17 @@ onUnmounted(() => {
 
                 <div class="relative z-10 w-full max-w-[90vw] text-center mix-blend-difference">
                    <!-- Content fades out as circle expands -->
-                   <div :style="{ opacity: Math.max(0, 1 - (scrollProgress - 0.3) * 10) }">
+                   <div :style="{ opacity: Math.max(0, 1 - (scrollProgress - 0.5) * 8) }">
                       <div class="inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12">
                          <IconShield class="w-4 h-4 text-emerald-300/90 animate-pulse" />
                          <span class="text-xs font-mono tracking-widest uppercase">{{ t.features.c2_badge }}</span>
                       </div>
-                      <h2 class="text-[12vw] leading-[0.8] font-black tracking-[-0.08em] mb-8">
-                         {{ t.features.c2_title }}
-                      </h2>
-                      <p class="text-2xl text-gray-400 max-w-2xl mx-auto font-light tracking-tight">
+                      <div class="relative inline-block">
+                         <h2 class="relative z-10 text-[12vw] leading-[0.8] font-black tracking-[-0.08em] mb-8">
+                            {{ t.features.c2_title }}
+                         </h2>
+                      </div>
+                      <p class="text-2xl text-gray-400 max-w-2xl mx-auto font-light tracking-tight relative z-10">
                          {{ t.features.c2_desc }}
                       </p>
                    </div>
@@ -387,20 +421,32 @@ onUnmounted(() => {
 
              <!-- SLIDE 3: Journal (Iridescent -> Revealed by White Circle) -->
              <!-- Since Slide 2 circle turns white and expands, Slide 3 should ideally have a white base or transition smoothly -->
-             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-white">
+             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-white"
+                  :style="{
+                    perspective: '1000px'
+                  }"
+             >
                 <div class="absolute inset-0 bg-gradient-to-tr from-rose-50 via-slate-50 to-indigo-50 opacity-80"></div>
                 
-                <div class="relative z-10 w-full max-w-[85vw] grid md:grid-cols-2 gap-24 items-center">
+                <!-- Background Number -->
+                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none">03</div>
+
+                <div class="relative z-10 w-full max-w-[85vw] grid md:grid-cols-2 gap-24 items-center transition-transform duration-75 will-change-transform"
+                     :style="{
+                        transform: `rotateY(${(scrollProgress - 0.66) * 45}deg) scale(${Math.max(0.8, 1 - Math.abs(scrollProgress - 0.66) * 0.8)})`,
+                        opacity: Math.max(0, 1 - Math.abs(scrollProgress - 0.66) * 2)
+                     }"
+                >
                    <div class="space-y-10">
-                       <div class="overflow-hidden">
-                           <h2 class="text-[10vw] leading-[0.85] font-black tracking-[-0.06em] text-black">
+                       <div class="relative">
+                           <h2 class="relative z-10 text-[8vw] xl:text-[7rem] leading-tight font-black tracking-[-0.06em] text-black whitespace-nowrap">
                              {{ t.features.c3_title }}
                            </h2>
                        </div>
-                       <p class="text-3xl text-gray-500 font-medium tracking-tight leading-tight max-w-lg">
+                       <p class="text-3xl text-gray-500 font-medium tracking-tight leading-tight max-w-lg relative z-10">
                          {{ t.features.c3_desc }}
                        </p>
-                       <div class="flex gap-4 pt-8">
+                       <div class="flex gap-4 pt-8 relative z-10">
                           <div class="w-16 h-16 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors duration-500">
                              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </div>
@@ -434,9 +480,23 @@ onUnmounted(() => {
 
              <!-- SLIDE 4: Sync (Structured/Grid) -->
              <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F2F2F2]">
-                <div class="absolute inset-0" style="background-image: linear-gradient(#D4D4D4 1px, transparent 1px), linear-gradient(90deg, #D4D4D4 1px, transparent 1px); background-size: 50px 50px;"></div>
+                <div class="absolute inset-0 will-change-transform" 
+                     :style="{ 
+                        backgroundImage: `linear-gradient(#D4D4D4 1px, transparent 1px), linear-gradient(90deg, #D4D4D4 1px, transparent 1px)`,
+                        backgroundSize: `${Math.max(40, 50 + (1 - scrollProgress) * 500)}px ${Math.max(40, 50 + (1 - scrollProgress) * 500)}px`,
+                        backgroundPosition: `${scrollProgress * 200}px ${scrollProgress * 200}px`,
+                        opacity: scrollProgress > 0.8 ? 1 : 0.5
+                     }"></div>
                 
-                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center">
+                <!-- Background Number -->
+                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none mix-blend-multiply">04</div>
+
+                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center"
+                     :style="{
+                        opacity: Math.max(0, (scrollProgress - 0.75) * 4),
+                        transform: `scale(${Math.min(1, 0.8 + (scrollProgress - 0.75))})`
+                     }"
+                >
                    <div class="mb-16 grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12">
                       <div class="group relative">
                          <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-15 group-hover:opacity-30 transition-opacity"></div>
@@ -458,12 +518,12 @@ onUnmounted(() => {
                       </div>
                    </div>
                    
-                   <h2 class="text-[12vw] leading-[0.8] font-black tracking-[-0.08em] text-black mb-10 mix-blend-darken uppercase">
+                   <h2 class="relative z-10 text-[12vw] leading-[0.8] font-black tracking-[-0.08em] text-black mb-10 mix-blend-darken uppercase">
                       {{ t.features.c4_title }}
                    </h2>
                    
-                   <div class="max-w-xl mx-auto backdrop-blur-sm bg-white/50 p-6 rounded-2xl border border-black/5">
-                      <p class="text-xl text-black font-mono tracking-tighter">
+                   <div class="backdrop-blur-sm bg-white/50 p-6 rounded-2xl border border-black/5 relative z-10">
+                      <p class="text-xl text-black font-mono tracking-tighter whitespace-nowrap">
                          {{ t.features.c4_desc }}
                       </p>
                    </div>
@@ -496,13 +556,12 @@ onUnmounted(() => {
           <h2 class="text-5xl md:text-9xl font-black tracking-tighter mb-12 mix-blend-difference">
              {{ t.cta.title }}
           </h2>
-          <p class="text-xl md:text-3xl text-gray-400 mb-16 max-w-2xl mx-auto font-light leading-relaxed">
+          <p class="text-xl md:text-3xl text-gray-400 mb-16 font-light leading-relaxed whitespace-nowrap">
              {{ t.cta.sub }}
           </p>
           <button 
              @click="router.push('/register')" 
              class="px-16 py-6 bg-white text-black rounded-full font-bold text-xl tracking-widest uppercase shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)] hover:bg-indigo-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_25px_70px_-35px_rgba(79,70,229,0.6)] transition-all duration-300 hover:scale-105"
-             @mouseenter="cursorHover = true" @mouseleave="cursorHover = false"
           >
              {{ t.cta.btn }}
           </button>
@@ -510,14 +569,14 @@ onUnmounted(() => {
     </section>
 
     <!-- === FOOTER === -->
-    <footer class="px-6 py-12 flex flex-col md:flex-row justify-between items-end bg-black text-white/40 text-xs font-mono uppercase tracking-widest border-t border-white/10">
+    <footer class="px-6 py-12 flex flex-col md:flex-row justify-between items-end bg-black text-white/60 text-xs font-mono uppercase tracking-widest border-t border-white/10">
        <div class="mb-8 md:mb-0 whitespace-pre-line leading-relaxed">
           {{ t.footer.copy }}
        </div>
        <div class="flex flex-col md:flex-row gap-8">
-          <router-link to="/privacy" class="hover:text-white transition-colors" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">{{ t.footer.privacy }}</router-link>
-          <router-link to="/terms" class="hover:text-white transition-colors" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">{{ t.footer.terms }}</router-link>
-          <a href="mailto:hello@cbtsaas.com" class="hover:text-white transition-colors" @mouseenter="cursorHover = true" @mouseleave="cursorHover = false">{{ t.footer.contact }}</a>
+          <router-link to="/privacy" class="hover:text-white transition-colors">{{ t.footer.privacy }}</router-link>
+          <router-link to="/terms" class="hover:text-white transition-colors">{{ t.footer.terms }}</router-link>
+          <a href="mailto:hello@cbtsaas.com" class="hover:text-white transition-colors">{{ t.footer.contact }}</a>
        </div>
     </footer>
 
