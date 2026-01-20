@@ -274,9 +274,36 @@ onUnmounted(() => {
        <div class="absolute inset-0 z-0 pointer-events-none opacity-0 transition-opacity duration-[2s] delay-700" :class="{ 'opacity-100': isRevealed }">
           <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
           <div class="absolute inset-0 opacity-[0.08]" style="background-image: linear-gradient(rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px); background-size: 120px 120px;"></div>
+          
           <div class="absolute inset-0 transition-opacity duration-500" :style="heroSpotlightStyle"></div>
           <div class="absolute top-1/4 -right-24 w-[600px] h-[600px] bg-indigo-100 rounded-full blur-[120px] opacity-60 mix-blend-multiply animate-blob"></div>
           <div class="absolute -bottom-24 -left-24 w-[520px] h-[520px] bg-blue-100 rounded-full blur-[110px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
+
+          <!-- Digital Rain / Data Noise (Fix: Dual-div seamless loop) -->
+          <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+             <!-- Rain Layer 1 -->
+             <div class="animate-rain-1 absolute top-0 left-0 w-full text-xs md:text-sm font-mono leading-relaxed text-black/20 break-all whitespace-pre-wrap opacity-60">
+0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
+1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
+0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
+1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
+0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
+1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
+0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
+1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
+             </div>
+             <!-- Rain Layer 2 -->
+             <div class="animate-rain-2 absolute top-0 left-0 w-full text-xs md:text-sm font-mono leading-relaxed text-black/20 break-all whitespace-pre-wrap opacity-60">
+0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
+1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
+0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
+1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
+0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
+1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
+0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
+1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
+             </div>
+          </div>
        </div>
 
        <div class="relative z-10 w-full flex flex-col justify-center md:block">
@@ -309,8 +336,8 @@ onUnmounted(() => {
     </header>
 
     <!-- === HORIZONTAL SCROLL SECTION === -->
-    <!-- Height is calculated to allow enough scroll space. 500vh gives us plenty of 'track' -->
-    <div ref="stickySection" class="relative h-[500vh] bg-black">
+    <!-- Height increased to 900vh to add "weight" and friction to the scroll, preventing it from feeling too slippery -->
+    <div ref="stickySection" class="relative h-[900vh] bg-black">
        <div class="sticky top-0 h-screen w-screen overflow-hidden flex items-center">
           
           <!-- Track -->
@@ -319,16 +346,23 @@ onUnmounted(() => {
              <!-- SLIDE 1: Structure (Glass/Blur) -->
              <div 
                class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F5F5F7]"
-               :style="{ 
-                  filter: `blur(${Math.max(0, (scrollProgress - 0.15) * 30)}px)`,
-                  transform: `scale(${Math.max(0.9, 1 - Math.max(0, scrollProgress - 0.15) * 0.4)})`,
-                  opacity: 1 - Math.max(0, (scrollProgress - 0.15) * 2)
+               :style="{
+                  filter: `blur(${Math.max(0, (scrollProgress - 0.25) * 40)}px)`,
+                  transform: `scale(${Math.max(0.95, 1 - Math.max(0, scrollProgress - 0.25) * 0.2)})`,
+                  opacity: 1 - Math.max(0, (scrollProgress - 0.25) * 3)
                }"
              >
                 <!-- Dynamic Background -->
                 <div class="absolute top-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-[#E0E0E0] rounded-full blur-[120px] opacity-60 mix-blend-multiply animate-blob"></div>
                 <div class="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-[#D6D6D6] rounded-full blur-[100px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
                 
+                <!-- Mega Marquee (New) -->
+                <div class="absolute top-1/2 left-0 w-full -translate-y-1/2 overflow-hidden pointer-events-none opacity-[0.03] select-none z-0">
+                   <div class="whitespace-nowrap text-[25vw] font-black leading-none animate-marquee" style="-webkit-text-stroke: 4px black; color: transparent;">
+                      COGNITIVE RESTRUCTURING • COGNITIVE RESTRUCTURING •
+                   </div>
+                </div>
+
                 <!-- Background Number -->
                 <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none">01</div>
 
@@ -336,7 +370,7 @@ onUnmounted(() => {
                    <div class="md:col-span-8 relative">
                       <div class="mb-4">
                          <h2 class="text-6xl md:text-[8vw] font-black tracking-[-0.05em] leading-[0.9] text-black relative z-10 will-change-transform" 
-                             :style="{ transform: `translateY(${Math.max(0, (scrollProgress - 0.1) * 200)}px)` }">
+                             :style="{ transform: `translateY(${Math.max(0, (scrollProgress - 0.1) * 50)}px)` }">
                             {{ t.features.c1_title }}
                          </h2>
                       </div>
@@ -347,7 +381,7 @@ onUnmounted(() => {
                    </div>
                    
                    <!-- Interactive Glass Card -->
-                   <div class="md:col-span-4 h-[52vh] w-full bg-white/40 backdrop-blur-2xl border border-white/70 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] flex items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700">
+                   <div class="md:col-span-4 h-[52vh] w-full bg-white/40 backdrop-blur-2xl border border-white/70 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] flex items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700 animate-float-slow">
                       <div class="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                       <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
                          <div class="absolute -left-1/2 top-1/2 h-[1px] w-[200%] bg-white/40 animate-scan"></div>
@@ -379,6 +413,12 @@ onUnmounted(() => {
              <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-black text-white">
                 <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
                 
+                <!-- Radar Grid (Visibility Boosted) -->
+                <div class="absolute inset-[-50%] border-[1px] border-white/20 rounded-full animate-spin-very-slow opacity-60" 
+                     style="background: repeating-radial-gradient(transparent, transparent 99px, rgba(255,255,255,0.15) 100px);">
+                </div>
+                <div class="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(255,255,255,0.1)_360deg)] animate-spin-very-slow opacity-50"></div>
+
                 <!-- Background Number -->
                 <div 
                   class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none select-none z-1 pointer-events-none transition-colors duration-500"
@@ -390,7 +430,7 @@ onUnmounted(() => {
                 <!-- Mapping: 0.3 -> 1x, 0.6 -> 60x -->
                 <div 
                   class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] border-[1px] border-white rounded-full flex items-center justify-center transition-transform duration-75 will-change-transform z-0"
-                  :style="{ 
+                  :style="{
                     transform: `translate(-50%, -50%) scale(${Math.max(1, (scrollProgress - 0.25) * 80)})`,
                     borderWidth: `${Math.max(1, 100 * (0.6 - scrollProgress))}px`,
                     opacity: scrollProgress > 0.65 ? 0 : Math.max(0, 1 - (scrollProgress - 0.55) * 10),
@@ -403,9 +443,14 @@ onUnmounted(() => {
                 <div class="relative z-10 w-full max-w-[90vw] text-center mix-blend-difference">
                    <!-- Content fades out as circle expands -->
                    <div :style="{ opacity: Math.max(0, 1 - (scrollProgress - 0.5) * 8) }">
-                      <div class="inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12">
-                         <IconShield class="w-4 h-4 text-emerald-300/90 animate-pulse" />
-                         <span class="text-xs font-mono tracking-widest uppercase">{{ t.features.c2_badge }}</span>
+                      <div class="relative inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12 overflow-hidden">
+                         <!-- Rotating Ring Effect -->
+                         <div class="absolute inset-[-4px] border border-dashed border-white/20 rounded-full animate-spin-very-slow"></div>
+                         <!-- Scan Beam (New) -->
+                         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent h-[40%] w-full animate-scan-vertical"></div>
+                         
+                         <IconShield class="w-4 h-4 text-emerald-300/90 animate-pulse relative z-10" />
+                         <span class="text-xs font-mono tracking-widest uppercase relative z-10">{{ t.features.c2_badge }}</span>
                       </div>
                       <div class="relative inline-block">
                          <h2 class="relative z-10 text-[12vw] leading-[0.8] font-black tracking-[-0.08em] mb-8">
@@ -428,8 +473,17 @@ onUnmounted(() => {
              >
                 <div class="absolute inset-0 bg-gradient-to-tr from-rose-50 via-slate-50 to-indigo-50 opacity-80"></div>
                 
-                <!-- Background Number -->
-                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none">03</div>
+                <!-- Thought Ripples (Visibility Boosted) -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple" style="animation-delay: 1s;"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple" style="animation-delay: 2s;"></div>
+
+                <!-- Floating Particles -->
+                <div class="absolute top-1/4 right-1/4 w-32 h-32 bg-indigo-200/30 rounded-full blur-2xl animate-float-slow" style="animation-delay: -2s;"></div>
+                <div class="absolute bottom-1/3 left-1/3 w-40 h-40 bg-rose-200/30 rounded-full blur-2xl animate-float-slow" style="animation-delay: -5s;"></div>
+
+                <!-- Background Number (Added Pulse) -->
+                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none animate-pulse-slow">03</div>
 
                 <div class="relative z-10 w-full max-w-[85vw] grid md:grid-cols-2 gap-24 items-center transition-transform duration-75 will-change-transform"
                      :style="{
@@ -480,14 +534,22 @@ onUnmounted(() => {
 
              <!-- SLIDE 4: Sync (Structured/Grid) -->
              <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F2F2F2]">
-                <div class="absolute inset-0 will-change-transform" 
-                     :style="{ 
+                <!-- Ambient Grid Motion: animate-grid-pan -->
+                <div class="absolute inset-0 will-change-transform animate-grid-pan" 
+                     :style="{
                         backgroundImage: `linear-gradient(#D4D4D4 1px, transparent 1px), linear-gradient(90deg, #D4D4D4 1px, transparent 1px)`,
                         backgroundSize: `${Math.max(40, 50 + (1 - scrollProgress) * 500)}px ${Math.max(40, 50 + (1 - scrollProgress) * 500)}px`,
-                        backgroundPosition: `${scrollProgress * 200}px ${scrollProgress * 200}px`,
                         opacity: scrollProgress > 0.8 ? 1 : 0.5
                      }"></div>
                 
+                <!-- Binary Stream Overlay (Visibility Boosted) -->
+                <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(0deg,transparent,transparent_1px,black_2px)] animate-scan-vertical" style="background-size: 100% 4px;"></div>
+
+                <!-- Data Stream Lines (New) -->
+                <div class="absolute top-[20%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent animate-scan-fast"></div>
+                <div class="absolute top-[60%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent animate-scan-fast" style="animation-delay: 1s;"></div>
+                <div class="absolute left-[30%] top-0 h-full w-[1px] bg-gradient-to-b from-transparent via-black/10 to-transparent animate-scan-vertical" style="animation-duration: 3s;"></div>
+
                 <!-- Background Number -->
                 <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none mix-blend-multiply">04</div>
 
@@ -608,17 +670,80 @@ onUnmounted(() => {
 }
 .animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
 
-@keyframes spin-slow {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
-.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+.animate-marquee { animation: marquee 20s linear infinite; }
+
+@keyframes scan-vertical {
+  0%, 100% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+.animate-scan-vertical { animation: scan-vertical 4s ease-in-out infinite; }
+
+@keyframes scan-fast {
+  0% { left: -100%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+.animate-scan-fast { animation: scan-fast 3s linear infinite; }
+
+@keyframes spin-very-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-very-slow { animation: spin-very-slow 20s linear infinite; }
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
+
+@keyframes grid-pan {
+  0% { background-position: 0px 0px; }
+  100% { background-position: 100px 100px; }
+}
+.animate-grid-pan { animation: grid-pan 10s linear infinite; }
+
+@keyframes ripple {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  20% { opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+.animate-ripple { animation: ripple 6s linear infinite; }
+
+@keyframes rain-1 {
+  0% { transform: translateY(0%); }
+  100% { transform: translateY(100%); }
+}
+@keyframes rain-2 {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(0%); }
+}
+.animate-rain-1 { 
+  animation: rain-1 20s linear infinite; 
+  will-change: transform;
+}
+.animate-rain-2 { 
+  animation: rain-2 20s linear infinite; 
+  will-change: transform;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-blob,
   .animate-scan,
   .animate-float-slow,
-  .animate-spin-slow {
+  .animate-spin-slow,
+  .animate-spin-very-slow,
+  .animate-pulse-slow,
+  .animate-grid-pan,
+  .animate-ripple,
+  .animate-rain-1,
+  .animate-rain-2 {
     animation: none !important;
   }
 }
