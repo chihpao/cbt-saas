@@ -110,6 +110,24 @@ const checkHover = (e: MouseEvent) => {
 // Optimized Scroll Handler using requestAnimationFrame
 let reqId: number | null = null
 let rainReqId: number | null = null
+let mouseReqId: number | null = null
+
+// Mouse Physics State (Normalized -1 to 1)
+const smoothMouseX = ref(0)
+const smoothMouseY = ref(0)
+
+const updateMousePhysics = () => {
+  // Normalize target (-1 to 1)
+  // Center of screen is 0,0
+  const targetX = (mouseX.value / window.innerWidth) * 2 - 1
+  const targetY = (mouseY.value / window.innerHeight) * 2 - 1
+  
+  // Lerp for heavy/smooth feel (0.05 factor)
+  smoothMouseX.value += (targetX - smoothMouseX.value) * 0.05
+  smoothMouseY.value += (targetY - smoothMouseY.value) * 0.05
+  
+  mouseReqId = requestAnimationFrame(updateMousePhysics)
+}
 
 // Quartic Easing for sharper, premium "Whoosh" feel
 const easeInOutQuart = (x: number): number => {
@@ -366,6 +384,8 @@ onMounted(async () => {
           isRevealed.value = true 
           // Initial trigger
           updateScroll()
+          // Start Mouse Physics
+          updateMousePhysics()
         }, 1000)
       }, 600)
     }
@@ -379,6 +399,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleScroll)
   if (reqId) cancelAnimationFrame(reqId)
   if (rainReqId) cancelAnimationFrame(rainReqId)
+  if (mouseReqId) cancelAnimationFrame(mouseReqId)
 })
 </script>
 
@@ -531,8 +552,11 @@ onUnmounted(() => {
                    <!-- Interactive Glass Card -->
                    <div class="md:col-span-4 h-[52vh] w-full bg-white/60 backdrop-blur-xl border border-white/80 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] flex items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700 animate-float-slow"
                         :style="{ 
-                            transform: `perspective(1000px) rotateY(${(slideProgress.raw - 0) * 25}deg) rotateX(${(slideProgress.raw - 0) * -15}deg) translateZ(50px)`,
-                            boxShadow: `${(slideProgress.raw - 0) * -20}px 40px 80px -20px rgba(0,0,0,0.2)`
+                            transform: `perspective(1000px) 
+                                        rotateY(${(slideProgress.raw * 25) + (smoothMouseX * 15)}deg) 
+                                        rotateX(${(slideProgress.raw * -15) + (smoothMouseY * -15)}deg) 
+                                        translateZ(50px)`,
+                            boxShadow: `${(slideProgress.raw * -20) + (smoothMouseX * -30)}px 40px 80px -20px rgba(0,0,0,0.2)`
                         }"
                    >
                       <div class="absolute inset-0 bg-gradient-to-tr from-white/80 via-transparent to-transparent opacity-50"></div>
@@ -599,7 +623,8 @@ onUnmounted(() => {
                    <!-- Content Reveal: Text scales UP and fades IN as circle expands -->
                    <div :style="{ 
                        opacity: Math.min(1, Math.max(0, (slideProgress.s2 - 0.2) * 2.5)),
-                       transform: `scale(${0.9 + (Math.min(1, Math.max(0, (slideProgress.s2 - 0.2) * 2.5)) * 0.1)})` 
+                       transform: `scale(${0.9 + (Math.min(1, Math.max(0, (slideProgress.s2 - 0.2) * 2.5)) * 0.1)}) 
+                                   translate(${smoothMouseX * 30}px, ${smoothMouseY * 30}px)` 
                    }">
                       <div class="relative inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12 overflow-hidden">
                          <!-- Rotating Ring Effect -->
@@ -680,13 +705,18 @@ onUnmounted(() => {
                       <!-- Back Layer -->
                       <div class="absolute w-[80%] h-[70%] bg-white rounded-[2rem] shadow-2xl border border-gray-100 opacity-60 scale-90 -z-10 animate-float-slow" 
                            style="animation-delay: -2s;"
-                           :style="{ transform: `translateZ(-100px) translateY(${(slideProgress.raw - 2) * -30}px) rotateZ(-5deg)` }"></div>
+                           :style="{ transform: `translateZ(-100px) 
+                                                 translateY(${(slideProgress.raw - 2) * -30}px) 
+                                                 rotateZ(-5deg)
+                                                 translate(${smoothMouseX * -20}px, ${smoothMouseY * -20}px)` }"></div>
                       
                       <!-- Main Card -->
                       <div class="relative bg-white/90 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 w-full animate-float-slow will-change-transform group cursor-pointer"
                            :style="{ 
-                               transform: `rotateY(${(slideProgress.raw - 2) * -20}deg) rotateX(${(slideProgress.raw - 2) * 15}deg) translateZ(50px)`,
-                               boxShadow: `${(slideProgress.raw - 2) * 40}px 60px 120px -30px rgba(0,0,0,0.15)`
+                               transform: `rotateY(${((slideProgress.raw - 2) * -20) + (smoothMouseX * 10)}deg) 
+                                           rotateX(${((slideProgress.raw - 2) * 15) + (smoothMouseY * -10)}deg) 
+                                           translateZ(50px)`,
+                               boxShadow: `${((slideProgress.raw - 2) * 40) + (smoothMouseX * -20)}px 60px 120px -30px rgba(0,0,0,0.15)`
                            }">
                             
                             <!-- Shimmer Overlay -->
@@ -720,7 +750,11 @@ onUnmounted(() => {
                      :style="{
                         backgroundImage: `linear-gradient(#CBD5E1 1px, transparent 1px), linear-gradient(90deg, #CBD5E1 1px, transparent 1px)`,
                         backgroundSize: '80px 80px',
-                        transform: `perspective(1000px) rotateX(60deg) translateY(${(1 - slideProgress.s4) * 200}px) translateZ(-200px)`,
+                        transform: `perspective(1000px) 
+                                    rotateX(${60 + (smoothMouseY * 5)}deg) 
+                                    rotateZ(${smoothMouseX * 2}deg)
+                                    translateY(${(1 - slideProgress.s4) * 200}px) 
+                                    translateZ(-200px)`,
                         opacity: 0.3
                      }">
                      <div class="absolute inset-0 bg-gradient-to-t from-[#F8FAFC] via-transparent to-transparent"></div>
