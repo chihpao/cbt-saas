@@ -111,45 +111,33 @@ const checkHover = (e: MouseEvent) => {
 let reqId: number | null = null
 let rainReqId: number | null = null
 
-const easeInOutCubic = (x: number): number => {
-  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
+// Quartic Easing for sharper, premium "Whoosh" feel
+const easeInOutQuart = (x: number): number => {
+  return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2
 }
 
-// Pro Mapping: "Magnetic" Snapping with "Alive" Drift
-// Allows the slide to move slightly (drift) while in the hold zone, 
-// then swooshes to the next slide.
+// Crisp Mapping: Absolute Lock -> Fast Transition -> Absolute Lock
+// No "muddy" drifting. 
 const mapProgressToSteps = (p: number, totalSlides: number) => {
-  const totalZones = totalSlides
-  const progressPerZone = 1 / totalZones
+  // We divide the scroll distance into N-1 transition zones.
+  const transitions = totalSlides - 1
+  const zoneSize = 1 / transitions
   
-  const currentZoneIndex = Math.min(Math.floor(p / progressPerZone), totalZones - 1)
-  const zoneProgress = (p - (currentZoneIndex * progressPerZone)) / progressPerZone
+  const currentZone = Math.min(Math.floor(p / zoneSize), transitions - 1)
+  const localP = (p - (currentZone * zoneSize)) / zoneSize
   
-  // Configuration for "Pro" Feel
-  // Reduced holdRatio from 0.65 to 0.55 for faster response
-  const holdRatio = 0.55 
-  const driftAmount = 0.1 // The slide moves 10% of its width during the hold phase (Parallax)
+  // 75% of the scroll space is purely for reading (Static).
+  // 25% is for the transition.
+  const holdRatio = 0.75
   
-  let val = 0
-  
-  if (zoneProgress <= holdRatio) {
-     // HOLD PHASE:
-     const localP = zoneProgress / holdRatio
-     val = currentZoneIndex + (localP * driftAmount)
+  if (localP <= holdRatio) {
+     // ABSOLUTE LOCK. No drift.
+     return currentZone
   } else {
-     // TRANSITION PHASE:
-     const transP = (zoneProgress - holdRatio) / (1 - holdRatio)
-     const eased = easeInOutCubic(transP)
-     val = (currentZoneIndex + driftAmount) + (eased * (1 - driftAmount))
+     // FAST TRANSITION
+     const transP = (localP - holdRatio) / (1 - holdRatio)
+     return currentZone + easeInOutQuart(transP)
   }
-  
-  // Boundary check for last slide
-  if (currentZoneIndex === totalZones - 1) {
-     const lastDrift = Math.min(zoneProgress, 1) * driftAmount
-     val = (totalZones - 1) + lastDrift
-  }
-  
-  return val
 }
 
 const updateScroll = () => {
@@ -166,7 +154,7 @@ const updateScroll = () => {
   
   scrollProgress.value = progress
 
-  // Direct calculation - NO LAG
+  // Direct calculation - CRISP RESPONSE
   const stepped = mapProgressToSteps(progress, 4)
 
   // Apply Transform to Track
@@ -207,10 +195,28 @@ const scrollToFeatures = () => {
   }
 }
 
-// --- Lifecycle ---
+// --- CTA Intersection Observer ---
+const ctaSection = ref<HTMLElement | null>(null)
+const ctaVisible = ref(false)
+
 onMounted(async () => {
-  // Canvas Matrix Rain Logic
+  // ... existing matrix rain logic ...
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        ctaVisible.value = true
+        observer.unobserve(entry.target)
+      }
+    })
+  }, { threshold: 0.3 })
+  
+  if (ctaSection.value) {
+    observer.observe(ctaSection.value)
+  }
+
   if (rainCanvas.value) {
+
     const canvas = rainCanvas.value
     const ctx = canvas.getContext('2d')
     if (ctx) {
@@ -738,13 +744,13 @@ onUnmounted(() => {
                      :style="{ transform: `translateY(${(slideProgress.raw - 3) * 100}px)` }"
                 >04</div>
 
-                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center -translate-y-[4vh]"
+                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center -translate-y-[12vh]"
                      :style="{
                         opacity: slideProgress.s4,
                         transform: `scale(${Math.min(1, 0.95 + (slideProgress.s4 * 0.05))})`
                      }"
                 >
-                   <div class="mb-12 md:mb-20 grid grid-cols-1 sm:grid-cols-2 gap-16 md:gap-32 relative">
+                   <div class="mb-8 md:mb-12 grid grid-cols-1 sm:grid-cols-2 gap-12 md:gap-24 relative">
                       <!-- Connection Line -->
                       <div class="absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-slate-200 hidden sm:block">
                           <div class="absolute top-1/2 left-0 w-full h-[2px] bg-indigo-400 blur-[1px] -translate-y-1/2 animate-scan-fast" style="animation-duration: 3s;"></div>
@@ -752,31 +758,31 @@ onUnmounted(() => {
 
                       <div class="group relative z-10">
                          <div class="absolute inset-0 bg-indigo-500 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow"></div>
-                         <div class="relative z-10 w-32 h-32 bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-indigo-600 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(99,102,241,0.2)]">
-                            <IconDevices class="w-14 h-14" />
+                         <div class="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-indigo-600 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(99,102,241,0.2)]">
+                            <IconDevices class="w-10 h-10 md:w-14 md:h-14" />
                          </div>
-                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                         <div class="relative z-10 mt-4 md:mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                             {{ t.features.c4_tag1 }}
                          </div>
                       </div>
                       
-                      <div class="group relative z-10 sm:mt-10">
+                      <div class="group relative z-10 mt-8 sm:mt-0">
                          <div class="absolute inset-0 bg-slate-400 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow" style="animation-delay: 1s;"></div>
-                         <div class="relative z-10 w-32 h-32 bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-slate-700 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(71,85,105,0.2)]">
-                            <IconClock class="w-14 h-14" />
+                         <div class="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-slate-700 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(71,85,105,0.2)]">
+                            <IconClock class="w-10 h-10 md:w-14 md:h-14" />
                          </div>
-                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                         <div class="relative z-10 mt-4 md:mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                             {{ t.features.c4_tag2 }}
                          </div>
                       </div>
                    </div>
                    
-                   <h2 class="relative z-10 text-[10vw] leading-[0.8] font-black tracking-[-0.08em] text-slate-900 mb-10 uppercase">
+                   <h2 class="relative z-10 text-[8vw] md:text-[6rem] leading-[0.9] font-black tracking-[-0.08em] text-slate-900 mb-6 md:mb-10 uppercase">
                       {{ t.features.c4_title }}
                    </h2>
                    
-                   <div class="bg-white/80 backdrop-blur-sm p-6 md:p-8 rounded-3xl border border-slate-200 relative z-10 shadow-sm max-w-2xl mx-auto">
-                      <p class="text-lg md:text-xl text-slate-600 font-medium tracking-tight leading-relaxed">
+                   <div class="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-200 relative z-10 shadow-sm max-w-xl mx-auto">
+                      <p class="text-base md:text-xl text-slate-600 font-medium tracking-tight leading-relaxed">
                          {{ t.features.c4_desc }}
                       </p>
                    </div>
@@ -799,44 +805,55 @@ onUnmounted(() => {
        </div>
     </div>
 
-    <!-- === CALL TO ACTION === -->
-    <section class="py-40 px-6 md:px-12 bg-black text-[#EAEAEA] text-center relative overflow-hidden">
-       <div class="absolute inset-0 opacity-20">
+    <!-- === CALL TO ACTION & FOOTER === -->
+    <section ref="ctaSection" class="min-h-screen flex flex-col relative bg-black text-[#EAEAEA]">
+       <div class="absolute inset-0 opacity-20 pointer-events-none">
           <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop" class="w-full h-full object-cover grayscale" alt="Noise">
        </div>
        
-       <div class="relative z-10 max-w-4xl mx-auto">
-          <h2 class="text-5xl md:text-9xl font-black tracking-tighter mb-12 mix-blend-difference">
-             {{ t.cta.title }}
-          </h2>
-          <p class="text-xl md:text-3xl text-gray-400 mb-16 font-light leading-relaxed whitespace-nowrap">
-             {{ t.cta.sub }}
-          </p>
-          <button 
-             @click="router.push('/register')" 
-             class="px-16 py-6 bg-white text-black rounded-full font-bold text-xl tracking-widest uppercase shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)] hover:bg-indigo-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_25px_70px_-35px_rgba(79,70,229,0.6)] transition-all duration-300 hover:scale-105"
-          >
-             {{ t.cta.btn }}
-          </button>
+       <!-- Main Content -->
+       <div class="relative z-10 flex-grow flex flex-col items-center justify-center px-6 md:px-12 text-center py-32">
+          <div class="max-w-4xl mx-auto space-y-12 transition-all duration-1000 transform" 
+               :class="ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'">
+             <h2 class="text-5xl md:text-9xl font-black tracking-tighter mix-blend-difference">
+                {{ t.cta.title }}
+             </h2>
+             <p class="text-xl md:text-3xl text-gray-400 font-light leading-relaxed whitespace-pre-wrap transition-all duration-1000 delay-200"
+                :class="ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'">
+                {{ t.cta.sub }}
+             </p>
+             <div class="transition-all duration-1000 delay-300"
+                  :class="ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'">
+                <button 
+                   @click="router.push('/register')" 
+                   class="px-16 py-6 bg-white text-black rounded-full font-bold text-xl tracking-widest uppercase shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)] hover:bg-indigo-500 hover:text-white hover:-translate-y-1 hover:shadow-[0_25px_70px_-35px_rgba(79,70,229,0.6)] transition-all duration-300 hover:scale-105"
+                >
+                   {{ t.cta.btn }}
+                </button>
+             </div>
+          </div>
        </div>
-    </section>
 
-    <!-- === FOOTER === -->
-    <footer class="px-6 py-12 flex flex-col md:flex-row justify-between items-end bg-black text-white/60 text-xs font-mono uppercase tracking-widest border-t border-white/10">
-       <div class="mb-8 md:mb-0 whitespace-pre-line leading-relaxed">
-          {{ t.footer.copy }}
-       </div>
-       <div class="flex flex-col md:flex-row gap-8">
-          <router-link to="/privacy" class="hover:text-white transition-colors">{{ t.footer.privacy }}</router-link>
-          <router-link to="/terms" class="hover:text-white transition-colors">{{ t.footer.terms }}</router-link>
-          <a href="mailto:hello@cbtsaas.com" class="hover:text-white transition-colors">{{ t.footer.contact }}</a>
-       </div>
-    </footer>
+       <!-- Integrated Footer -->
+       <footer class="relative z-10 w-full px-6 py-12 flex flex-col md:flex-row justify-between items-end text-white/60 text-xs font-mono uppercase tracking-widest border-t border-white/10 transition-all duration-1000 delay-500"
+               :class="ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'">
+          <div class="mb-8 md:mb-0 whitespace-pre-line leading-relaxed hover:text-white transition-colors duration-300">
+             {{ t.footer.copy }}
+          </div>
+          <div class="flex flex-col md:flex-row gap-8">
+             <router-link to="/privacy" class="hover:text-indigo-400 transition-colors duration-300 hover:-translate-y-1 inline-block">{{ t.footer.terms }}</router-link>
+             <router-link to="/terms" class="hover:text-indigo-400 transition-colors duration-300 hover:-translate-y-1 inline-block">{{ t.footer.privacy }}</router-link>
+             <a href="mailto:hello@cbtsaas.com" class="hover:text-indigo-400 transition-colors duration-300 hover:-translate-y-1 inline-block">{{ t.footer.contact }}</a>
+          </div>
+       </footer>
+    </section>
 
   </div>
 </template>
 
 <style scoped>
+
+
 /* Animations */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
