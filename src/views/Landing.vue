@@ -111,11 +111,6 @@ const checkHover = (e: MouseEvent) => {
 let reqId: number | null = null
 let rainReqId: number | null = null
 
-// --- Physics / Interpolation State ---
-const targetProgress = ref(0)
-const smoothedProgress = ref(0)
-const computedStep = ref(0) // The final value used for transforms
-
 const easeInOutCubic = (x: number): number => {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
 }
@@ -131,21 +126,18 @@ const mapProgressToSteps = (p: number, totalSlides: number) => {
   const zoneProgress = (p - (currentZoneIndex * progressPerZone)) / progressPerZone
   
   // Configuration for "Pro" Feel
-  const holdRatio = 0.65 // 65% of the scroll space is for "holding" the slide
+  // Reduced holdRatio from 0.65 to 0.55 for faster response
+  const holdRatio = 0.55 
   const driftAmount = 0.1 // The slide moves 10% of its width during the hold phase (Parallax)
   
   let val = 0
   
   if (zoneProgress <= holdRatio) {
      // HOLD PHASE:
-     // Map 0..0.65 -> currentZoneIndex .. currentZoneIndex + driftAmount
-     // This creates the "connected" feel - it's not frozen, it moves slowly.
      const localP = zoneProgress / holdRatio
      val = currentZoneIndex + (localP * driftAmount)
   } else {
      // TRANSITION PHASE:
-     // Map 0.65..1.0 -> (currentZoneIndex + driftAmount) .. (currentZoneIndex + 1)
-     // Use an easing function for the "Swoosh"
      const transP = (zoneProgress - holdRatio) / (1 - holdRatio)
      const eased = easeInOutCubic(transP)
      val = (currentZoneIndex + driftAmount) + (eased * (1 - driftAmount))
@@ -153,51 +145,15 @@ const mapProgressToSteps = (p: number, totalSlides: number) => {
   
   // Boundary check for last slide
   if (currentZoneIndex === totalZones - 1) {
-     // Last slide just drifts, doesn't jump to next
      const lastDrift = Math.min(zoneProgress, 1) * driftAmount
      val = (totalZones - 1) + lastDrift
   }
   
-  // Normalize back to 0..1 range relative to the track width (which spans N-1 viewport widths)
-  // Our track translation goes from 0 to 3 (for 4 slides).
-  // val is currently 0..3.something. 
-  // We want to return the raw index value 0..3
   return val
 }
 
-const updateLoop = () => {
-  // 1. LERP: Smoothly interpolate current -> target
-  // 0.05 = Heavy/Premium weight. 0.1 = Snappy.
-  const diff = targetProgress.value - smoothedProgress.value
-  
-  // Stop updating if close enough to save resources
-  if (Math.abs(diff) < 0.0001) {
-    smoothedProgress.value = targetProgress.value
-  } else {
-    smoothedProgress.value += diff * 0.06
-  }
-
-  // 2. Compute the "Stepped" / Magnetic value based on the smooth progress
-  // We map 0..1 scroll to 0..3 slide index space
-  const stepped = mapProgressToSteps(smoothedProgress.value, 4)
-  computedStep.value = stepped
-
-  // 3. Apply Transform to Track
-  if (horizontalTrack.value) {
-     // track moves to the left, so negative
-     // The total movable distance is 3 viewport widths (for 4 slides)
-     // stepped is 0..3
-     // We translate by viewportWidth * stepped
-     const viewportWidth = window.innerWidth
-     const translateX = viewportWidth * stepped
-     horizontalTrack.value.style.transform = `translate3d(${-translateX}px, 0, 0)`
-  }
-
-  reqId = requestAnimationFrame(updateLoop)
-}
-
 const updateScroll = () => {
-  if (!stickySection.value) return
+  if (!stickySection.value || !horizontalTrack.value) return
 
   const stickyTop = stickySection.value.getBoundingClientRect().top
   const stickyHeight = stickySection.value.offsetHeight
@@ -208,21 +164,28 @@ const updateScroll = () => {
   let rawProgress = -stickyTop / maxScrollDistance
   const progress = Math.max(0, Math.min(rawProgress, 1))
   
-  // Update the TARGET, let the loop handle the smoothing
-  targetProgress.value = progress
+  scrollProgress.value = progress
+
+  // Direct calculation - NO LAG
+  const stepped = mapProgressToSteps(progress, 4)
+
+  // Apply Transform to Track
+  const viewportWidth = window.innerWidth
+  const translateX = viewportWidth * stepped
+  horizontalTrack.value.style.transform = `translate3d(${-translateX}px, 0, 0)`
   
-  // For the progress bar, we can use the direct target or smooth, let's use smooth for consistency
-  scrollProgress.value = smoothedProgress.value
+  reqId = null
 }
 
 const handleScroll = () => {
-  updateScroll()
+  if (!reqId) {
+    reqId = requestAnimationFrame(updateScroll)
+  }
 }
 
-// Unified Slide Progress computed from the SMOOTHED & STEPPED value
-// This ensures internal animations match the track movement exactly
+// Unified Slide Progress computed directly from scrollProgress
 const slideProgress = computed(() => {
-  const p = computedStep.value // This is 0..3+
+  const p = mapProgressToSteps(scrollProgress.value, 4)
   return {
     s1: Math.max(0, 1 - Math.abs(p - 0)),
     s2: Math.max(0, 1 - Math.abs(p - 1)),
@@ -395,8 +358,8 @@ onMounted(async () => {
         isLoading.value = false
         setTimeout(() => {
           isRevealed.value = true 
-          // Start the Physics Loop
-          updateLoop()
+          // Initial trigger
+          updateScroll()
         }, 1000)
       }, 600)
     }
@@ -546,15 +509,15 @@ onUnmounted(() => {
 
                 <div class="relative z-10 w-full max-w-[90vw] grid md:grid-cols-12 gap-8 items-end">
                    <div class="md:col-span-8 relative">
-                      <div class="mb-4 overflow-hidden">
+                      <div class="mb-4">
                          <h2 class="text-6xl md:text-[8vw] font-black tracking-[-0.05em] leading-[0.9] text-black relative z-10 will-change-transform" 
-                             :style="{ transform: `translateY(${(1 - slideProgress.s1) * 80}%)` }">
+                             :style="{ transform: `translateY(${(1 - slideProgress.s1) * 40}px)` }">
                             {{ t.features.c1_title }}
                          </h2>
                       </div>
                       <div class="h-[1px] w-0 bg-black mb-8 transition-all duration-1000 delay-300" :class="{ 'w-32': slideProgress.s1 > 0.5 }"></div>
                       <p class="text-xl md:text-2xl text-gray-500 max-w-xl font-medium tracking-tight leading-relaxed transition-all duration-700"
-                         :style="{ opacity: slideProgress.s1, transform: `translateY(${(1 - slideProgress.s1) * 40}px)` }">
+                         :style="{ opacity: slideProgress.s1, transform: `translateY(${(1 - slideProgress.s1) * 20}px)` }">
                          {{ t.features.c1_desc }}
                       </p>
                    </div>
@@ -629,8 +592,8 @@ onUnmounted(() => {
                 <div class="relative z-10 w-full max-w-[90vw] text-center mix-blend-difference">
                    <!-- Content Reveal: Text scales UP and fades IN as circle expands -->
                    <div :style="{ 
-                       opacity: Math.min(1, Math.max(0, (slideProgress.s2 - 0.3) * 3)),
-                       transform: `scale(${0.8 + (Math.min(1, Math.max(0, (slideProgress.s2 - 0.3) * 3)) * 0.2)})` 
+                       opacity: Math.min(1, Math.max(0, (slideProgress.s2 - 0.2) * 2.5)),
+                       transform: `scale(${0.9 + (Math.min(1, Math.max(0, (slideProgress.s2 - 0.2) * 2.5)) * 0.1)})` 
                    }">
                       <div class="relative inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12 overflow-hidden">
                          <!-- Rotating Ring Effect -->
@@ -641,9 +604,9 @@ onUnmounted(() => {
                          <IconShield class="w-4 h-4 text-emerald-300/90 animate-pulse relative z-10" />
                          <span class="text-xs font-mono tracking-widest uppercase relative z-10">{{ t.features.c2_badge }}</span>
                       </div>
-                      <div class="relative inline-block overflow-hidden">
+                      <div class="relative inline-block">
                          <h2 class="relative z-10 text-[12vw] leading-[0.8] font-black tracking-[-0.08em] mb-8"
-                             :style="{ transform: `translateY(${(1 - Math.min(1, slideProgress.s2 * 1.5)) * 100}%)` }">
+                             :style="{ transform: `translateY(${(1 - Math.min(1, slideProgress.s2 * 1.5)) * 40}px)` }">
                             {{ t.features.c2_title }}
                          </h2>
                       </div>
