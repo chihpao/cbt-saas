@@ -122,88 +122,126 @@ const checkHover = (e: MouseEvent) => {
 let reqId: number | null = null
 let rainReqId: number | null = null
 
+// --- Physics / Interpolation State ---
+const targetProgress = ref(0)
+const smoothedProgress = ref(0)
+const computedStep = ref(0) // The final value used for transforms
+
 const easeInOutCubic = (x: number): number => {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
 }
 
-// S-Curve Mapping for "Stickiness"
-// We map the linear scroll progress (0 to 1) to a stepped output
+// Pro Mapping: "Magnetic" Snapping with "Alive" Drift
+// Allows the slide to move slightly (drift) while in the hold zone, 
+// then swooshes to the next slide.
 const mapProgressToSteps = (p: number, totalSlides: number) => {
-  // We want N hold zones. 
-  // For 4 slides: 
-  // 0.00-0.20 -> Slide 1 Hold
-  // 0.20-0.25 -> Transition 1->2
-  // 0.25-0.45 -> Slide 2 Hold
-  // ...
-  
-  const totalZones = totalSlides // 4
-  const progressPerZone = 1 / totalZones // 0.25
+  const totalZones = totalSlides
+  const progressPerZone = 1 / totalZones
   
   const currentZoneIndex = Math.min(Math.floor(p / progressPerZone), totalZones - 1)
   const zoneProgress = (p - (currentZoneIndex * progressPerZone)) / progressPerZone
   
-  // Inside a zone:
-  // 0.0 to 0.7 -> Hold (return currentZoneIndex)
-  // 0.7 to 1.0 -> Transition (return currentZoneIndex + eased(0..1))
+  // Configuration for "Pro" Feel
+  const holdRatio = 0.65 // 65% of the scroll space is for "holding" the slide
+  const driftAmount = 0.1 // The slide moves 10% of its width during the hold phase (Parallax)
   
-  const holdRatio = 0.7
+  let val = 0
   
-  let stepOffset = 0
-  if (zoneProgress > holdRatio) {
-     const transProgress = (zoneProgress - holdRatio) / (1 - holdRatio)
-     stepOffset = easeInOutCubic(transProgress)
+  if (zoneProgress <= holdRatio) {
+     // HOLD PHASE:
+     // Map 0..0.65 -> currentZoneIndex .. currentZoneIndex + driftAmount
+     // This creates the "connected" feel - it's not frozen, it moves slowly.
+     const localP = zoneProgress / holdRatio
+     val = currentZoneIndex + (localP * driftAmount)
+  } else {
+     // TRANSITION PHASE:
+     // Map 0.65..1.0 -> (currentZoneIndex + driftAmount) .. (currentZoneIndex + 1)
+     // Use an easing function for the "Swoosh"
+     const transP = (zoneProgress - holdRatio) / (1 - holdRatio)
+     const eased = easeInOutCubic(transP)
+     val = (currentZoneIndex + driftAmount) + (eased * (1 - driftAmount))
   }
   
-  // We need to map the output (0..3) back to the translation range (0..1 for 3 transitions)
-  // The translation moves from index 0 to index 3. 
-  // Max translation = 3 viewport widths.
-  // Output range needs to be 0 to 3.
-  
-  const rawStep = currentZoneIndex + stepOffset
-  
-  // Normalize 0..3 to 0..1
-  // But wait, the last slide (index 3) shouldn't transition to index 4.
-  // So for the last zone, stepOffset should stay 0.
-  
+  // Boundary check for last slide
   if (currentZoneIndex === totalZones - 1) {
-     return (totalZones - 1) / (totalZones - 1) // Just stay at the end
+     // Last slide just drifts, doesn't jump to next
+     const lastDrift = Math.min(zoneProgress, 1) * driftAmount
+     val = (totalZones - 1) + lastDrift
   }
   
-  return rawStep / (totalZones - 1)
+  // Normalize back to 0..1 range relative to the track width (which spans N-1 viewport widths)
+  // Our track translation goes from 0 to 3 (for 4 slides).
+  // val is currently 0..3.something. 
+  // We want to return the raw index value 0..3
+  return val
+}
+
+const updateLoop = () => {
+  // 1. LERP: Smoothly interpolate current -> target
+  // 0.05 = Heavy/Premium weight. 0.1 = Snappy.
+  const diff = targetProgress.value - smoothedProgress.value
+  
+  // Stop updating if close enough to save resources
+  if (Math.abs(diff) < 0.0001) {
+    smoothedProgress.value = targetProgress.value
+  } else {
+    smoothedProgress.value += diff * 0.06
+  }
+
+  // 2. Compute the "Stepped" / Magnetic value based on the smooth progress
+  // We map 0..1 scroll to 0..3 slide index space
+  const stepped = mapProgressToSteps(smoothedProgress.value, 4)
+  computedStep.value = stepped
+
+  // 3. Apply Transform to Track
+  if (horizontalTrack.value) {
+     // track moves to the left, so negative
+     // The total movable distance is 3 viewport widths (for 4 slides)
+     // stepped is 0..3
+     // We translate by viewportWidth * stepped
+     const viewportWidth = window.innerWidth
+     const translateX = viewportWidth * stepped
+     horizontalTrack.value.style.transform = `translate3d(${-translateX}px, 0, 0)`
+  }
+
+  reqId = requestAnimationFrame(updateLoop)
 }
 
 const updateScroll = () => {
-  if (!stickySection.value || !horizontalTrack.value) return
+  if (!stickySection.value) return
 
   const stickyTop = stickySection.value.getBoundingClientRect().top
   const stickyHeight = stickySection.value.offsetHeight
   const viewportHeight = window.innerHeight
-  const viewportWidth = window.innerWidth
   
   const maxScrollDistance = stickyHeight - viewportHeight
   
   let rawProgress = -stickyTop / maxScrollDistance
   const progress = Math.max(0, Math.min(rawProgress, 1))
-  scrollProgress.value = progress
-
-  // Apply "Sticky" S-Curve Logic
-  // We have 4 slides
-  const steppedProgress = mapProgressToSteps(progress, 4)
-
-  const trackWidth = horizontalTrack.value.scrollWidth
-  const maxTranslate = trackWidth - viewportWidth
-  const translateX = maxTranslate * steppedProgress
-
-  horizontalTrack.value.style.transform = `translate3d(${-translateX}px, 0, 0)`
   
-  reqId = null
+  // Update the TARGET, let the loop handle the smoothing
+  targetProgress.value = progress
+  
+  // For the progress bar, we can use the direct target or smooth, let's use smooth for consistency
+  scrollProgress.value = smoothedProgress.value
 }
 
 const handleScroll = () => {
-  if (!reqId) {
-    reqId = requestAnimationFrame(updateScroll)
-  }
+  updateScroll()
 }
+
+// Unified Slide Progress computed from the SMOOTHED & STEPPED value
+// This ensures internal animations match the track movement exactly
+const slideProgress = computed(() => {
+  const p = computedStep.value // This is 0..3+
+  return {
+    s1: Math.max(0, 1 - Math.abs(p - 0)),
+    s2: Math.max(0, 1 - Math.abs(p - 1)),
+    s3: Math.max(0, 1 - Math.abs(p - 2)),
+    s4: Math.max(0, 1 - Math.abs(p - 3)),
+    raw: p
+  }
+})
 
 const handleSignOut = async () => {
   await signOut()
@@ -368,8 +406,8 @@ onMounted(async () => {
         isLoading.value = false
         setTimeout(() => {
           isRevealed.value = true 
-          // Initial trigger to set positions correctly
-          updateScroll()
+          // Start the Physics Loop
+          updateLoop()
         }, 1000)
       }, 600)
     }
