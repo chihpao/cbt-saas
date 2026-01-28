@@ -505,6 +505,43 @@ onUnmounted(() => {
     <div ref="stickySection" class="relative h-[1200vh] bg-black">
        <div class="sticky top-0 h-screen w-screen overflow-hidden flex items-center">
           
+          <!-- THE TRAVELER: Persistent Morphing Element -->
+          <div class="absolute pointer-events-none z-50 will-change-transform transition-colors duration-300"
+               :style="{
+                  left: '50%',
+                  top: '50%',
+                  transform: `translate(calc(-50% + ${smoothMouseX * 40}px), calc(-50% + ${smoothMouseY * 40}px))`,
+                  width: slideProgress.raw < 1.5 ? '60px' : (slideProgress.raw < 2.5 ? '120px' : '80px'),
+                  height: slideProgress.raw < 1.5 ? '60px' : (slideProgress.raw < 2.5 ? '120px' : '80px'),
+               }">
+               
+               <!-- S1: Soft Blob -->
+               <div class="absolute inset-0 bg-slate-400 rounded-full blur-xl transition-all duration-700"
+                    :style="{ opacity: slideProgress.raw < 0.8 ? 0.4 : 0, transform: `scale(${slideProgress.raw < 0.8 ? 1 : 0.5})` }"></div>
+
+               <!-- S2: White Ring (Privacy) -->
+               <div class="absolute inset-0 border-[3px] border-white rounded-full transition-all duration-500 ease-out"
+                    :style="{ 
+                        opacity: slideProgress.raw > 0.5 && slideProgress.raw < 1.8 ? 1 : 0, 
+                        transform: `scale(${slideProgress.raw > 0.5 && slideProgress.raw < 1.8 ? 1.5 : 0.8}) rotate(${slideProgress.raw * 180}deg)`,
+                        boxShadow: '0 0 30px rgba(255,255,255,0.3)' 
+                    }"></div>
+
+               <!-- S3: Gradient Orb (Journal) -->
+               <div class="absolute inset-0 bg-gradient-to-tr from-indigo-400 to-rose-400 rounded-full blur-[30px] transition-all duration-700"
+                    :style="{ opacity: slideProgress.raw > 1.5 && slideProgress.raw < 2.5 ? 0.6 : 0, transform: `scale(${slideProgress.raw > 1.5 && slideProgress.raw < 2.5 ? 1.5 : 0.5})` }"></div>
+
+               <!-- S4: Tech Square (Sync) -->
+               <div class="absolute inset-0 border-2 border-indigo-500 bg-indigo-500/10 transition-all duration-500"
+                    :style="{ 
+                        opacity: slideProgress.raw > 2.2 ? 1 : 0, 
+                        transform: `rotate(${45 + (slideProgress.raw * 45)}deg) scale(${slideProgress.raw > 2.2 ? 1 : 0.5})`,
+                        borderRadius: slideProgress.raw > 2.2 ? '12px' : '50%'
+                    }">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+               </div>
+          </div>
+
           <!-- Track -->
           <div ref="horizontalTrack" class="flex h-full w-full will-change-transform">
              
