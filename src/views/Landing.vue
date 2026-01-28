@@ -72,18 +72,7 @@ const loadingPercentage = ref(0)
 const loadingWord = ref('')
 const isRevealed = ref(false)
 
-const slideProgress = computed(() => {
-  // Normalize progress to 0-3 range (4 slides)
-  const p = scrollProgress.value * 3
-  return {
-    s1: Math.max(0, 1 - Math.abs(p - 0)),
-    s2: Math.max(0, 1 - Math.abs(p - 1)),
-    s3: Math.max(0, 1 - Math.abs(p - 2)),
-    s4: Math.max(0, 1 - Math.abs(p - 3)),
-    // Raw diffs for parallax direction
-    raw: p
-  }
-})
+
 
 // --- Scroll & Mouse State ---
 const mouseX = ref(-100)
