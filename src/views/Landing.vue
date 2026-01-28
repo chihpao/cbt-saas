@@ -79,6 +79,7 @@ const cursorHover = ref(false)
 const stickySection = ref<HTMLElement | null>(null)
 const horizontalTrack = ref<HTMLElement | null>(null)
 const scrollProgress = ref(0)
+const rainCanvas = ref<HTMLCanvasElement | null>(null)
 const heroSpotlightStyle = computed(() => ({
   backgroundImage: `radial-gradient(700px at ${mouseX.value}px ${mouseY.value}px, rgba(99, 102, 241, 0.16), transparent 65%)`
 }))
@@ -106,6 +107,7 @@ const checkHover = (e: MouseEvent) => {
 
 // Optimized Scroll Handler using requestAnimationFrame
 let reqId: number | null = null
+let rainReqId: number | null = null
 
 const updateScroll = () => {
   if (!stickySection.value || !horizontalTrack.value) return
@@ -161,6 +163,118 @@ const scrollToFeatures = () => {
 
 // --- Lifecycle ---
 onMounted(async () => {
+  // Canvas Matrix Rain Logic
+  if (rainCanvas.value) {
+    const canvas = rainCanvas.value
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      let width = window.innerWidth
+      let height = window.innerHeight
+      
+      interface Drop {
+        x: number
+        y: number
+        z: number // depth 0.2 to 1.5
+        speed: number
+        chars: string[]
+        maxLen: number
+      }
+      
+      let drops: Drop[] = []
+      const baseFontSize = 14
+      let hue = 0
+      
+      const initDrops = () => {
+         drops = []
+         const count = Math.floor(width / 15) // Density
+         for(let i=0; i<count; i++) {
+            addDrop(true)
+         }
+      }
+      
+      const addDrop = (randomY = false) => {
+         const z = Math.random() * 0.8 + 0.2 
+         const size = Math.floor(baseFontSize * z)
+         const len = Math.floor(Math.random() * 15 + 5)
+         drops.push({
+            x: Math.random() * width,
+            y: randomY ? Math.random() * height : -100 - (len * size),
+            z: z,
+            speed: (Math.random() * 3 + 1) * z, 
+            chars: Array(len).fill('').map(() => Math.random() > 0.5 ? '1' : '0'),
+            maxLen: len
+         })
+      }
+
+      const resize = () => {
+         width = window.innerWidth
+         height = window.innerHeight
+         canvas.width = width
+         canvas.height = height
+         initDrops()
+      }
+      
+      const drawRain = () => {
+        ctx.clearRect(0, 0, width, height)
+        hue = (hue + 0.2) % 360
+        
+        ctx.textBaseline = 'top'
+        
+        drops.forEach((drop, idx) => {
+          drop.y += drop.speed
+          
+          if (Math.random() > 0.96) {
+             drop.chars[Math.floor(Math.random() * drop.chars.length)] = Math.random() > 0.5 ? '1' : '0'
+          }
+          
+          const size = Math.floor(baseFontSize * ((drop.z * 1.5) + 0.5))
+          ctx.font = `700 ${size}px monospace`
+          
+          drop.chars.forEach((char, charIdx) => {
+             const charY = drop.y - (charIdx * size * 1.1)
+             if (charY > height + 50 || charY < -50) return
+
+             const fade = 1 - (charIdx / drop.maxLen)
+             const opacity = drop.z * fade * 0.6
+             
+             if (charIdx === 0) {
+                 ctx.fillStyle = `hsla(${hue}, 100%, 90%, ${opacity})`
+                 // Add subtle glow to head
+                 ctx.shadowBlur = 10
+                 ctx.shadowColor = `hsla(${hue}, 100%, 50%, ${opacity})`
+             } else {
+                 ctx.fillStyle = `hsla(${hue}, 60%, 50%, ${opacity})`
+                 ctx.shadowBlur = 0
+             }
+             
+             ctx.fillText(char, drop.x, charY)
+          })
+          
+          // Reset shadow
+          ctx.shadowBlur = 0
+
+          if (drop.y - (drop.maxLen * size * 1.1) > height) {
+             const newZ = Math.random() * 0.8 + 0.2
+             drops[idx] = {
+                x: Math.random() * width,
+                y: -100,
+                z: newZ,
+                speed: (Math.random() * 3 + 1) * newZ,
+                chars: Array(Math.floor(Math.random() * 15 + 5)).fill('').map(() => Math.random() > 0.5 ? '1' : '0'),
+                maxLen: Math.floor(Math.random() * 15 + 5)
+             }
+          }
+        })
+        
+        rainReqId = requestAnimationFrame(drawRain)
+      }
+
+      resize()
+      window.addEventListener('resize', resize)
+      drawRain()
+    }
+  }
+
   user.value = await getCurrentUser()
   supa.auth.onAuthStateChange((_, session) => {
     user.value = session?.user || null
@@ -212,6 +326,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', handleScroll)
   if (reqId) cancelAnimationFrame(reqId)
+  if (rainReqId) cancelAnimationFrame(rainReqId)
 })
 </script>
 
@@ -279,31 +394,8 @@ onUnmounted(() => {
           <div class="absolute top-1/4 -right-24 w-[600px] h-[600px] bg-indigo-100 rounded-full blur-[120px] opacity-60 mix-blend-multiply animate-blob"></div>
           <div class="absolute -bottom-24 -left-24 w-[520px] h-[520px] bg-blue-100 rounded-full blur-[110px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
 
-          <!-- Digital Rain / Data Noise (Fix: Dual-div seamless loop) -->
-          <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
-             <!-- Rain Layer 1 -->
-             <div class="animate-rain-1 absolute top-0 left-0 w-full text-xs md:text-sm font-mono leading-relaxed text-black/20 break-all whitespace-pre-wrap opacity-60">
-0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
-1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
-0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
-1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
-0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
-1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
-0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
-1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
-             </div>
-             <!-- Rain Layer 2 -->
-             <div class="animate-rain-2 absolute top-0 left-0 w-full text-xs md:text-sm font-mono leading-relaxed text-black/20 break-all whitespace-pre-wrap opacity-60">
-0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
-1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
-0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
-1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
-0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
-1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010
-0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011
-1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100
-             </div>
-          </div>
+                    <!-- Digital Rain / Data Noise (Canvas) -->
+          <canvas ref="rainCanvas" class="absolute inset-0 z-0 pointer-events-none mix-blend-darken opacity-80"></canvas>
        </div>
 
        <div class="relative z-10 w-full flex flex-col justify-center md:block">
@@ -336,8 +428,8 @@ onUnmounted(() => {
     </header>
 
     <!-- === HORIZONTAL SCROLL SECTION === -->
-    <!-- Height increased to 900vh to add "weight" and friction to the scroll, preventing it from feeling too slippery -->
-    <div ref="stickySection" class="relative h-[900vh] bg-black">
+    <!-- Height reduced to 500vh for faster scroll feel -->
+    <div ref="stickySection" class="relative h-[500vh] bg-black">
        <div class="sticky top-0 h-screen w-screen overflow-hidden flex items-center">
           
           <!-- Track -->
@@ -347,9 +439,9 @@ onUnmounted(() => {
              <div 
                class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F5F5F7]"
                :style="{
-                  filter: `blur(${Math.max(0, (scrollProgress - 0.25) * 40)}px)`,
-                  transform: `scale(${Math.max(0.95, 1 - Math.max(0, scrollProgress - 0.25) * 0.2)})`,
-                  opacity: 1 - Math.max(0, (scrollProgress - 0.25) * 3)
+                  filter: `blur(${Math.max(0, (scrollProgress - 0.35) * 40)}px)`,
+                  transform: `scale(${Math.max(0.95, 1 - Math.max(0, scrollProgress - 0.35) * 0.2)})`,
+                  opacity: 1 - Math.max(0, (scrollProgress - 0.35) * 4)
                }"
              >
                 <!-- Dynamic Background -->
@@ -422,27 +514,26 @@ onUnmounted(() => {
                 <!-- Background Number -->
                 <div 
                   class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none select-none z-1 pointer-events-none transition-colors duration-500"
-                  :class="scrollProgress > 0.35 ? 'text-black/10' : 'text-white/10'"
+                  :class="scrollProgress > 0.4 ? 'text-black/10' : 'text-white/10'"
                 >02</div>
 
                 <!-- THE EXPANDING CIRCLE -->
-                <!-- We want this to expand as we scroll from roughly 0.3 (center of slide 2) to 0.6 (transition to slide 3) -->
-                <!-- Mapping: 0.3 -> 1x, 0.6 -> 60x -->
+                <!-- Delayed expansion to keep slide visible longer -->
                 <div 
                   class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] border-[1px] border-white rounded-full flex items-center justify-center transition-transform duration-75 will-change-transform z-0"
                   :style="{
-                    transform: `translate(-50%, -50%) scale(${Math.max(1, (scrollProgress - 0.25) * 80)})`,
-                    borderWidth: `${Math.max(1, 100 * (0.6 - scrollProgress))}px`,
-                    opacity: scrollProgress > 0.65 ? 0 : Math.max(0, 1 - (scrollProgress - 0.55) * 10),
-                    backgroundColor: scrollProgress > 0.35 ? '#F8FAFC' : 'transparent',
-                    borderColor: scrollProgress > 0.35 ? 'transparent' : '#FFFFFF'
+                    transform: `translate(-50%, -50%) scale(${Math.max(1, (scrollProgress - 0.3) * 80)})`,
+                    borderWidth: `${Math.max(1, 100 * (0.65 - scrollProgress))}px`,
+                    opacity: scrollProgress > 0.7 ? 0 : Math.max(0, 1 - (scrollProgress - 0.6) * 10),
+                    backgroundColor: scrollProgress > 0.4 ? '#F8FAFC' : 'transparent',
+                    borderColor: scrollProgress > 0.4 ? 'transparent' : '#FFFFFF'
                   }"
                 >
                 </div>
 
                 <div class="relative z-10 w-full max-w-[90vw] text-center mix-blend-difference">
                    <!-- Content fades out as circle expands -->
-                   <div :style="{ opacity: Math.max(0, 1 - (scrollProgress - 0.5) * 8) }">
+                   <div :style="{ opacity: Math.max(0, 1 - (scrollProgress - 0.55) * 8) }">
                       <div class="relative inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12 overflow-hidden">
                          <!-- Rotating Ring Effect -->
                          <div class="absolute inset-[-4px] border border-dashed border-white/20 rounded-full animate-spin-very-slow"></div>
@@ -465,7 +556,6 @@ onUnmounted(() => {
              </div>
 
              <!-- SLIDE 3: Journal (Iridescent -> Revealed by White Circle) -->
-             <!-- Since Slide 2 circle turns white and expands, Slide 3 should ideally have a white base or transition smoothly -->
              <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-white"
                   :style="{
                     perspective: '1000px'
@@ -487,8 +577,8 @@ onUnmounted(() => {
 
                 <div class="relative z-10 w-full max-w-[85vw] grid md:grid-cols-2 gap-24 items-center transition-transform duration-75 will-change-transform"
                      :style="{
-                        transform: `rotateY(${(scrollProgress - 0.66) * 45}deg) scale(${Math.max(0.8, 1 - Math.abs(scrollProgress - 0.66) * 0.8)})`,
-                        opacity: Math.max(0, 1 - Math.abs(scrollProgress - 0.66) * 2)
+                        transform: `rotateY(${(scrollProgress - 0.7) * 45}deg) scale(${Math.max(0.8, 1 - Math.abs(scrollProgress - 0.7) * 0.8)})`,
+                        opacity: Math.max(0, 1 - Math.abs(scrollProgress - 0.7) * 2.5)
                      }"
                 >
                    <div class="space-y-10">
@@ -716,22 +806,7 @@ onUnmounted(() => {
 }
 .animate-ripple { animation: ripple 6s linear infinite; }
 
-@keyframes rain-1 {
-  0% { transform: translateY(0%); }
-  100% { transform: translateY(100%); }
-}
-@keyframes rain-2 {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(0%); }
-}
-.animate-rain-1 { 
-  animation: rain-1 20s linear infinite; 
-  will-change: transform;
-}
-.animate-rain-2 { 
-  animation: rain-2 20s linear infinite; 
-  will-change: transform;
-}
+
 
 @media (prefers-reduced-motion: reduce) {
   .animate-blob,
