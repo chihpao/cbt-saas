@@ -708,75 +708,75 @@ onUnmounted(() => {
              </div>
 
              <!-- SLIDE 4: Sync (Structured/Grid) -->
-             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#0F172A] text-white">
-                <!-- 3D Perspective Grid Floor -->
+             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F8FAFC] text-slate-900">
+                <!-- 3D Perspective Grid Floor (Light Theme) -->
                 <div class="absolute inset-x-[-50%] bottom-[-50%] h-[150%] origin-bottom will-change-transform" 
                      :style="{
-                        backgroundImage: `linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)`,
+                        backgroundImage: `linear-gradient(#CBD5E1 1px, transparent 1px), linear-gradient(90deg, #CBD5E1 1px, transparent 1px)`,
                         backgroundSize: '80px 80px',
                         transform: `perspective(1000px) rotateX(60deg) translateY(${(1 - slideProgress.s4) * 200}px) translateZ(-200px)`,
-                        opacity: 0.4
+                        opacity: 0.3
                      }">
-                     <div class="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent"></div>
+                     <div class="absolute inset-0 bg-gradient-to-t from-[#F8FAFC] via-transparent to-transparent"></div>
                 </div>
                 
-                <!-- High-Intensity Beam Overlay -->
-                <div class="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(90deg,transparent,transparent_49px,rgba(56,189,248,0.5)_50px)] animate-scan" style="background-size: 200% 100%; animation-duration: 10s;"></div>
+                <!-- High-Intensity Beam Overlay (Subtle Indigo) -->
+                <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(90deg,transparent,transparent_49px,rgba(99,102,241,0.2)_50px)] animate-scan" style="background-size: 200% 100%; animation-duration: 15s;"></div>
 
-                <!-- Vertical Data Beams -->
-                <div class="absolute left-[20%] top-[-20%] h-[140%] w-[2px] bg-gradient-to-b from-transparent via-cyan-400 to-transparent animate-scan-vertical" 
-                     style="animation-duration: 2s; opacity: 0.6;"></div>
-                <div class="absolute right-[20%] top-[-20%] h-[140%] w-[2px] bg-gradient-to-b from-transparent via-indigo-400 to-transparent animate-scan-vertical" 
-                     style="animation-duration: 3s; animation-delay: 1s; opacity: 0.6;"></div>
+                <!-- Vertical Data Beams (Subtle) -->
+                <div class="absolute left-[20%] top-[-20%] h-[140%] w-[1px] bg-gradient-to-b from-transparent via-indigo-400 to-transparent animate-scan-vertical" 
+                     style="animation-duration: 4s; opacity: 0.4;"></div>
+                <div class="absolute right-[20%] top-[-20%] h-[140%] w-[1px] bg-gradient-to-b from-transparent via-slate-400 to-transparent animate-scan-vertical" 
+                     style="animation-duration: 5s; animation-delay: 2s; opacity: 0.4;"></div>
                 
                 <!-- Connecting Horizontal Beam -->
-                <div class="absolute top-[50%] left-[-10%] w-[120%] h-[2px] bg-gradient-to-r from-transparent via-white to-transparent animate-scan-fast"
-                     :style="{ animationDuration: `${3 - (slideProgress.s4 * 2)}s` }"></div>
+                <div class="absolute top-[50%] left-[-10%] w-[120%] h-[1px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-scan-fast"
+                     :style="{ animationDuration: `${4 - (slideProgress.s4 * 2)}s` }"></div>
 
                 <!-- Background Number -->
-                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-white/5 select-none z-0 pointer-events-none"
+                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-slate-200/50 select-none z-0 pointer-events-none"
                      :style="{ transform: `translateY(${(slideProgress.raw - 3) * 100}px)` }"
                 >04</div>
 
                 <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center"
                      :style="{
                         opacity: slideProgress.s4,
-                        transform: `scale(${Math.min(1, 0.8 + (slideProgress.s4 * 0.2))})`
+                        transform: `scale(${Math.min(1, 0.95 + (slideProgress.s4 * 0.05))})`
                      }"
                 >
                    <div class="mb-16 grid grid-cols-1 sm:grid-cols-2 gap-16 md:gap-32 relative">
                       <!-- Connection Line -->
-                      <div class="absolute top-1/2 left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent hidden sm:block">
-                          <div class="absolute top-1/2 left-0 w-full h-[4px] bg-cyan-400 blur-sm -translate-y-1/2 animate-scan-fast" style="animation-duration: 2s;"></div>
+                      <div class="absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-slate-200 hidden sm:block">
+                          <div class="absolute top-1/2 left-0 w-full h-[2px] bg-indigo-400 blur-[1px] -translate-y-1/2 animate-scan-fast" style="animation-duration: 3s;"></div>
                       </div>
 
                       <div class="group relative z-10">
-                         <div class="absolute inset-0 bg-cyan-500 rounded-[2.5rem] blur-[60px] opacity-20 group-hover:opacity-50 transition-opacity duration-500 animate-pulse-slow"></div>
-                         <div class="relative z-10 w-32 h-32 bg-[#1E293B] border border-white/10 rounded-[2.5rem] shadow-2xl flex items-center justify-center text-cyan-400 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_0_50px_-10px_rgba(34,211,238,0.5)]">
+                         <div class="absolute inset-0 bg-indigo-500 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow"></div>
+                         <div class="relative z-10 w-32 h-32 bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-indigo-600 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(99,102,241,0.2)]">
                             <IconDevices class="w-14 h-14" />
                          </div>
-                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200/80">
+                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                             {{ t.features.c4_tag1 }}
                          </div>
                       </div>
                       
                       <div class="group relative z-10 sm:mt-10">
-                         <div class="absolute inset-0 bg-indigo-500 rounded-[2.5rem] blur-[60px] opacity-20 group-hover:opacity-50 transition-opacity duration-500 animate-pulse-slow" style="animation-delay: 1s;"></div>
-                         <div class="relative z-10 w-32 h-32 bg-[#1E293B] border border-white/10 rounded-[2.5rem] shadow-2xl flex items-center justify-center text-indigo-400 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_0_50px_-10px_rgba(129,140,248,0.5)]">
+                         <div class="absolute inset-0 bg-slate-400 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow" style="animation-delay: 1s;"></div>
+                         <div class="relative z-10 w-32 h-32 bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-slate-700 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(71,85,105,0.2)]">
                             <IconClock class="w-14 h-14" />
                          </div>
-                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-indigo-200/80">
+                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                             {{ t.features.c4_tag2 }}
                          </div>
                       </div>
                    </div>
                    
-                   <h2 class="relative z-10 text-[10vw] leading-[0.8] font-black tracking-[-0.08em] text-white mb-10 mix-blend-lighten uppercase drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                   <h2 class="relative z-10 text-[10vw] leading-[0.8] font-black tracking-[-0.08em] text-slate-900 mb-10 uppercase">
                       {{ t.features.c4_title }}
                    </h2>
                    
-                   <div class="backdrop-blur-md bg-white/5 p-6 rounded-2xl border border-white/10 relative z-10 shadow-2xl">
-                      <p class="text-xl text-cyan-100 font-mono tracking-tighter whitespace-nowrap">
+                   <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 relative z-10 shadow-sm">
+                      <p class="text-xl text-slate-600 font-medium tracking-tight whitespace-nowrap">
                          {{ t.features.c4_desc }}
                       </p>
                    </div>
