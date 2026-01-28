@@ -751,8 +751,8 @@ onUnmounted(() => {
                         backgroundImage: `linear-gradient(#CBD5E1 1px, transparent 1px), linear-gradient(90deg, #CBD5E1 1px, transparent 1px)`,
                         backgroundSize: '80px 80px',
                         transform: `perspective(1000px) 
-                                    rotateX(${60 + (smoothMouseY * 5)}deg) 
-                                    rotateZ(${smoothMouseX * 2}deg)
+                                    rotateX(${60 + (smoothMouseY * 2)}deg) 
+                                    rotateZ(${smoothMouseX * 1}deg)
                                     translateY(${(1 - slideProgress.s4) * 200}px) 
                                     translateZ(-200px)`,
                         opacity: 0.3
@@ -778,49 +778,53 @@ onUnmounted(() => {
                      :style="{ transform: `translateY(${(slideProgress.raw - 3) * 100}px)` }"
                 >04</div>
 
-                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center -translate-y-[12vh]"
+                <div class="relative z-10 w-full h-full max-w-[90vw] flex flex-col items-center justify-center text-center pb-24 md:pb-32"
                      :style="{
                         opacity: slideProgress.s4,
-                        transform: `scale(${Math.min(1, 0.95 + (slideProgress.s4 * 0.05))})`
+                        transform: `scale(${Math.min(1, 0.98 + (slideProgress.s4 * 0.02))})`
                      }"
                 >
-                   <div class="mb-8 md:mb-12 grid grid-cols-1 sm:grid-cols-2 gap-12 md:gap-24 relative">
-                      <!-- Connection Line -->
-                      <div class="absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-slate-200 hidden sm:block">
-                          <div class="absolute top-1/2 left-0 w-full h-[2px] bg-indigo-400 blur-[1px] -translate-y-1/2 animate-scan-fast" style="animation-duration: 3s;"></div>
-                      </div>
+                   <div class="flex-1 flex flex-col justify-center w-full">
+                       <div class="mb-8 md:mb-12 grid grid-cols-1 sm:grid-cols-2 gap-12 md:gap-24 relative max-w-4xl mx-auto">
+                          <!-- Connection Line -->
+                          <div class="absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-slate-200 hidden sm:block">
+                              <div class="absolute top-1/2 left-0 w-full h-[2px] bg-indigo-400 blur-[1px] -translate-y-1/2 animate-scan-fast" style="animation-duration: 3s;"></div>
+                          </div>
 
-                      <div class="group relative z-10">
-                         <div class="absolute inset-0 bg-indigo-500 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow"></div>
-                         <div class="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-indigo-600 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(99,102,241,0.2)]">
-                            <IconDevices class="w-10 h-10 md:w-14 md:h-14" />
-                         </div>
-                         <div class="relative z-10 mt-4 md:mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                            {{ t.features.c4_tag1 }}
-                         </div>
-                      </div>
-                      
-                      <div class="group relative z-10 mt-8 sm:mt-0">
-                         <div class="absolute inset-0 bg-slate-400 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow" style="animation-delay: 1s;"></div>
-                         <div class="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-slate-700 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_30px_60px_-10px_rgba(71,85,105,0.2)]">
-                            <IconClock class="w-10 h-10 md:w-14 md:h-14" />
-                         </div>
-                         <div class="relative z-10 mt-4 md:mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                            {{ t.features.c4_tag2 }}
-                         </div>
-                      </div>
-                   </div>
-                   
-                   <h2 class="relative z-10 text-[8vw] md:text-[6rem] leading-[0.9] font-black tracking-[-0.08em] text-slate-900 mb-6 md:mb-10 uppercase">
-                      {{ t.features.c4_title }}
-                   </h2>
-                   
-                   <div class="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-200 relative z-10 shadow-sm max-w-xl mx-auto">
-                      <p class="text-base md:text-xl text-slate-600 font-medium tracking-tight leading-relaxed">
-                         {{ t.features.c4_desc }}
-                      </p>
+                          <div class="group relative z-10">
+                             <div class="absolute inset-0 bg-indigo-500 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow"></div>
+                             <div class="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-indigo-600 group-hover:-translate-y-2 transition-transform duration-500 group-hover:shadow-[0_20px_40px_-10px_rgba(99,102,241,0.15)]">
+                                <IconDevices class="w-10 h-10 md:w-14 md:h-14" />
+                             </div>
+                             <div class="relative z-10 mt-4 md:mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                {{ t.features.c4_tag1 }}
+                             </div>
+                          </div>
+                          
+                          <div class="group relative z-10 mt-8 sm:mt-0">
+                             <div class="absolute inset-0 bg-slate-400 rounded-[2.5rem] blur-[60px] opacity-10 group-hover:opacity-30 transition-opacity duration-500 animate-pulse-slow" style="animation-delay: 1s;"></div>
+                             <div class="relative z-10 w-24 h-24 md:w-32 md:h-32 bg-white border border-slate-200 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] flex items-center justify-center text-slate-700 group-hover:-translate-y-2 transition-transform duration-500 group-hover:shadow-[0_20px_40px_-10px_rgba(71,85,105,0.15)]">
+                                <IconClock class="w-10 h-10 md:w-14 md:h-14" />
+                             </div>
+                             <div class="relative z-10 mt-4 md:mt-6 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                {{ t.features.c4_tag2 }}
+                             </div>
+                          </div>
+                       </div>
+                       
+                       <h2 class="relative z-10 text-[8vw] md:text-[6rem] leading-[0.9] font-black tracking-[-0.08em] text-slate-900 mb-6 md:mb-10 uppercase">
+                          {{ t.features.c4_title }}
+                       </h2>
+                       
+                       <div class="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-200 relative z-10 shadow-sm max-w-xl mx-auto transform transition-transform duration-300"
+                            :style="{ transform: `translate(${smoothMouseX * 5}px, ${smoothMouseY * 5}px)` }">
+                          <p class="text-base md:text-xl text-slate-600 font-medium tracking-tight leading-relaxed">
+                             {{ t.features.c4_desc }}
+                          </p>
+                       </div>
                    </div>
                 </div>
+             </div>
              </div>
 
           </div>
