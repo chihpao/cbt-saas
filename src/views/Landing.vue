@@ -738,13 +738,13 @@ onUnmounted(() => {
                      :style="{ transform: `translateY(${(slideProgress.raw - 3) * 100}px)` }"
                 >04</div>
 
-                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center"
+                <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center -translate-y-[4vh]"
                      :style="{
                         opacity: slideProgress.s4,
                         transform: `scale(${Math.min(1, 0.95 + (slideProgress.s4 * 0.05))})`
                      }"
                 >
-                   <div class="mb-16 grid grid-cols-1 sm:grid-cols-2 gap-16 md:gap-32 relative">
+                   <div class="mb-12 md:mb-20 grid grid-cols-1 sm:grid-cols-2 gap-16 md:gap-32 relative">
                       <!-- Connection Line -->
                       <div class="absolute top-1/2 left-[10%] right-[10%] h-[1px] bg-slate-200 hidden sm:block">
                           <div class="absolute top-1/2 left-0 w-full h-[2px] bg-indigo-400 blur-[1px] -translate-y-1/2 animate-scan-fast" style="animation-duration: 3s;"></div>
@@ -775,8 +775,8 @@ onUnmounted(() => {
                       {{ t.features.c4_title }}
                    </h2>
                    
-                   <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 relative z-10 shadow-sm">
-                      <p class="text-xl text-slate-600 font-medium tracking-tight whitespace-nowrap">
+                   <div class="bg-white/80 backdrop-blur-sm p-6 md:p-8 rounded-3xl border border-slate-200 relative z-10 shadow-sm max-w-2xl mx-auto">
+                      <p class="text-lg md:text-xl text-slate-600 font-medium tracking-tight leading-relaxed">
                          {{ t.features.c4_desc }}
                       </p>
                    </div>
