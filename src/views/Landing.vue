@@ -128,31 +128,48 @@ const easeInOutCubic = (x: number): number => {
 
 // S-Curve Mapping for "Stickiness"
 // We map the linear scroll progress (0 to 1) to a stepped output
-const mapProgressToSteps = (p: number, steps: number) => {
-  // steps = number of slides - 1 (transitions)
-  // For 4 slides, we have 3 transitions: 0->1, 1->2, 2->3
-  // But wait, the standard translation logic maps 0->1 to 0->(N-1)*ViewportWidth
+const mapProgressToSteps = (p: number, totalSlides: number) => {
+  // We want N hold zones. 
+  // For 4 slides: 
+  // 0.00-0.20 -> Slide 1 Hold
+  // 0.20-0.25 -> Transition 1->2
+  // 0.25-0.45 -> Slide 2 Hold
+  // ...
   
-  // We want to linger at 0.0, 0.33, 0.66, 1.0 (approx)
-  // Let's normalize p to 0..(steps)
-  const expanded = p * steps
-  const index = Math.floor(expanded)
-  const remainder = expanded - index
+  const totalZones = totalSlides // 4
+  const progressPerZone = 1 / totalZones // 0.25
   
-  // We want the remainder to stay flat for a while, then jump
-  // E.g. 0 to 0.6 (Hold), 0.6 to 1.0 (Move)
+  const currentZoneIndex = Math.min(Math.floor(p / progressPerZone), totalZones - 1)
+  const zoneProgress = (p - (currentZoneIndex * progressPerZone)) / progressPerZone
   
-  const holdThreshold = 0.4 // 40% of the scroll time is spent "holding" the view
+  // Inside a zone:
+  // 0.0 to 0.7 -> Hold (return currentZoneIndex)
+  // 0.7 to 1.0 -> Transition (return currentZoneIndex + eased(0..1))
   
-  let remappedRemainder = 0
-  if (remainder > holdThreshold) {
-      // Map (0.4 to 1.0) -> (0 to 1)
-      const moveProgress = (remainder - holdThreshold) / (1 - holdThreshold)
-      remappedRemainder = easeInOutCubic(moveProgress)
+  const holdRatio = 0.7
+  
+  let stepOffset = 0
+  if (zoneProgress > holdRatio) {
+     const transProgress = (zoneProgress - holdRatio) / (1 - holdRatio)
+     stepOffset = easeInOutCubic(transProgress)
   }
-  // If remainder < holdThreshold, remappedRemainder stays 0 (Focus Phase)
   
-  return (index + remappedRemainder) / steps
+  // We need to map the output (0..3) back to the translation range (0..1 for 3 transitions)
+  // The translation moves from index 0 to index 3. 
+  // Max translation = 3 viewport widths.
+  // Output range needs to be 0 to 3.
+  
+  const rawStep = currentZoneIndex + stepOffset
+  
+  // Normalize 0..3 to 0..1
+  // But wait, the last slide (index 3) shouldn't transition to index 4.
+  // So for the last zone, stepOffset should stay 0.
+  
+  if (currentZoneIndex === totalZones - 1) {
+     return (totalZones - 1) / (totalZones - 1) // Just stay at the end
+  }
+  
+  return rawStep / (totalZones - 1)
 }
 
 const updateScroll = () => {
@@ -170,8 +187,8 @@ const updateScroll = () => {
   scrollProgress.value = progress
 
   // Apply "Sticky" S-Curve Logic
-  // We have 4 slides, so effectively 3 full transit steps to get from start to end
-  const steppedProgress = mapProgressToSteps(progress, 3)
+  // We have 4 slides
+  const steppedProgress = mapProgressToSteps(progress, 4)
 
   const trackWidth = horizontalTrack.value.scrollWidth
   const maxTranslate = trackWidth - viewportWidth
@@ -478,8 +495,7 @@ onUnmounted(() => {
              <div 
                class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F5F5F7]"
                :style="{
-                  filter: `blur(${Math.max(0, (1 - slideProgress.s1) * 20)}px)`,
-                  transform: `scale(${0.9 + (slideProgress.s1 * 0.1)})`,
+                  transform: `scale(${0.95 + (slideProgress.s1 * 0.05)})`,
                   opacity: slideProgress.s1
                }"
              >
@@ -488,9 +504,9 @@ onUnmounted(() => {
                 <div class="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-[#D6D6D6] rounded-full blur-[100px] opacity-60 mix-blend-multiply animate-blob animation-delay-2000"></div>
                 
                 <!-- Mega Marquee (New) -->
-                <div class="absolute top-1/2 left-0 w-full -translate-y-1/2 overflow-hidden pointer-events-none opacity-[0.03] select-none z-0">
+                <div class="absolute top-1/2 left-0 w-full -translate-y-1/2 overflow-hidden pointer-events-none opacity-[0.05] select-none z-0">
                    <div class="whitespace-nowrap text-[25vw] font-black leading-none animate-marquee" 
-                        :style="{ transform: `translateX(${(slideProgress.raw - 0) * -200}px)` }"
+                        :style="{ transform: `translateX(${(slideProgress.raw - 0) * -300}px)` }"
                         style="-webkit-text-stroke: 4px black; color: transparent;">
                       COGNITIVE RESTRUCTURING • COGNITIVE RESTRUCTURING •
                    </div>
@@ -498,48 +514,52 @@ onUnmounted(() => {
 
                 <!-- Background Number -->
                 <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none"
-                     :style="{ transform: `translateY(${(slideProgress.raw - 0) * 100}px)` }"
+                     :style="{ transform: `translateY(${(slideProgress.raw - 0) * 150}px)` }"
                 >01</div>
 
                 <div class="relative z-10 w-full max-w-[90vw] grid md:grid-cols-12 gap-8 items-end">
                    <div class="md:col-span-8 relative">
                       <div class="mb-4 overflow-hidden">
                          <h2 class="text-6xl md:text-[8vw] font-black tracking-[-0.05em] leading-[0.9] text-black relative z-10 will-change-transform" 
-                             :style="{ transform: `translateY(${(1 - slideProgress.s1) * 100}%)` }">
+                             :style="{ transform: `translateY(${(1 - slideProgress.s1) * 80}%)` }">
                             {{ t.features.c1_title }}
                          </h2>
                       </div>
-                      <div class="h-[1px] w-0 bg-black mb-8 transition-all duration-1000 delay-300" :class="{ 'w-24': slideProgress.s1 > 0.5 }"></div>
+                      <div class="h-[1px] w-0 bg-black mb-8 transition-all duration-1000 delay-300" :class="{ 'w-32': slideProgress.s1 > 0.5 }"></div>
                       <p class="text-xl md:text-2xl text-gray-500 max-w-xl font-medium tracking-tight leading-relaxed transition-all duration-700"
-                         :style="{ opacity: slideProgress.s1, transform: `translateY(${(1 - slideProgress.s1) * 20}px)` }">
+                         :style="{ opacity: slideProgress.s1, transform: `translateY(${(1 - slideProgress.s1) * 40}px)` }">
                          {{ t.features.c1_desc }}
                       </p>
                    </div>
                    
                    <!-- Interactive Glass Card -->
-                   <div class="md:col-span-4 h-[52vh] w-full bg-white/40 backdrop-blur-2xl border border-white/70 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] flex items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700 animate-float-slow"
-                        :style="{ transform: `perspective(1000px) rotateY(${(slideProgress.raw - 0) * 15}deg) rotateX(${(slideProgress.raw - 0) * -10}deg)` }"
+                   <div class="md:col-span-4 h-[52vh] w-full bg-white/60 backdrop-blur-xl border border-white/80 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] flex items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform duration-700 animate-float-slow"
+                        :style="{ 
+                            transform: `perspective(1000px) rotateY(${(slideProgress.raw - 0) * 25}deg) rotateX(${(slideProgress.raw - 0) * -15}deg) translateZ(50px)`,
+                            boxShadow: `${(slideProgress.raw - 0) * -20}px 40px 80px -20px rgba(0,0,0,0.2)`
+                        }"
                    >
-                      <div class="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                      <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                         <div class="absolute -left-1/2 top-1/2 h-[1px] w-[200%] bg-white/40 animate-scan"></div>
-                      </div>
-                      <div class="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center">
-                         <div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/70 bg-white/80 shadow-sm">
-                            <IconBrain class="h-8 w-8 text-gray-900/80" />
+                      <div class="absolute inset-0 bg-gradient-to-tr from-white/80 via-transparent to-transparent opacity-50"></div>
+                      <!-- Scanning Light Effect -->
+                      <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent w-[50%] skew-x-12 animate-scan"
+                           style="mix-blend-mode: overlay;"></div>
+                      
+                      <div class="relative z-10 flex h-full flex-col items-center justify-center gap-6 text-center transform transition-transform duration-500 hover:scale-105">
+                         <div class="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/70 bg-white/90 shadow-lg">
+                            <IconBrain class="h-10 w-10 text-indigo-600" />
                          </div>
                          <div class="grid w-52 grid-cols-4 gap-2">
-                            <div class="h-2 rounded-full bg-white/70"></div>
-                            <div class="h-2 rounded-full bg-white/40"></div>
-                            <div class="h-2 rounded-full bg-white/60"></div>
-                            <div class="h-2 rounded-full bg-white/30"></div>
-                            <div class="h-2 rounded-full bg-white/40"></div>
-                            <div class="h-2 rounded-full bg-white/70"></div>
-                            <div class="h-2 rounded-full bg-white/30"></div>
-                            <div class="h-2 rounded-full bg-white/60"></div>
+                            <div class="h-2 rounded-full bg-slate-800/80"></div>
+                            <div class="h-2 rounded-full bg-slate-800/40"></div>
+                            <div class="h-2 rounded-full bg-slate-800/60"></div>
+                            <div class="h-2 rounded-full bg-slate-800/30"></div>
+                            <div class="h-2 rounded-full bg-slate-800/40"></div>
+                            <div class="h-2 rounded-full bg-slate-800/70"></div>
+                            <div class="h-2 rounded-full bg-slate-800/30"></div>
+                            <div class="h-2 rounded-full bg-slate-800/60"></div>
                          </div>
-                         <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-700/80">
-                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                         <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-600 bg-white/50 px-4 py-2 rounded-full border border-white/50">
+                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             <span>{{ t.features.c1_meta }}</span>
                          </div>
                       </div>
@@ -566,13 +586,13 @@ onUnmounted(() => {
                 >02</div>
 
                 <!-- THE EXPANDING CIRCLE -->
-                <!-- Delayed expansion to keep slide visible longer -->
+                <!-- Adjusted to ensure text remains visible -->
                 <div 
                   class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30vw] h-[30vw] border-[1px] border-white rounded-full flex items-center justify-center transition-transform duration-75 will-change-transform z-0"
                   :style="{
                     transform: `translate(-50%, -50%) scale(${Math.max(1, (slideProgress.raw - 0.8) * 80)})`,
                     borderWidth: `${Math.max(1, 100 * (1.2 - slideProgress.raw))}px`,
-                    opacity: slideProgress.s2 > 0.9 ? 0 : 1,
+                    opacity: 1, /* Always keep opacity to 1 so background transition works */
                     backgroundColor: slideProgress.s2 > 0.5 ? '#F8FAFC' : 'transparent',
                     borderColor: slideProgress.s2 > 0.5 ? 'transparent' : '#FFFFFF'
                   }"
@@ -580,8 +600,11 @@ onUnmounted(() => {
                 </div>
 
                 <div class="relative z-10 w-full max-w-[90vw] text-center mix-blend-difference">
-                   <!-- Content fades out as circle expands -->
-                   <div :style="{ opacity: Math.max(0, 1 - (Math.abs(slideProgress.raw - 1.5) * 2)) }">
+                   <!-- Content Reveal: Text scales UP and fades IN as circle expands -->
+                   <div :style="{ 
+                       opacity: Math.min(1, Math.max(0, (slideProgress.s2 - 0.3) * 3)),
+                       transform: `scale(${0.8 + (Math.min(1, Math.max(0, (slideProgress.s2 - 0.3) * 3)) * 0.2)})` 
+                   }">
                       <div class="relative inline-flex items-center gap-3 px-4 py-1 border border-white/30 rounded-full mb-12 overflow-hidden">
                          <!-- Rotating Ring Effect -->
                          <div class="absolute inset-[-4px] border border-dashed border-white/20 rounded-full animate-spin-very-slow"></div>
@@ -593,12 +616,12 @@ onUnmounted(() => {
                       </div>
                       <div class="relative inline-block overflow-hidden">
                          <h2 class="relative z-10 text-[12vw] leading-[0.8] font-black tracking-[-0.08em] mb-8"
-                             :style="{ transform: `translateY(${(1 - slideProgress.s2) * 100}%)` }">
+                             :style="{ transform: `translateY(${(1 - Math.min(1, slideProgress.s2 * 1.5)) * 100}%)` }">
                             {{ t.features.c2_title }}
                          </h2>
                       </div>
                       <p class="text-2xl text-gray-400 max-w-2xl mx-auto font-light tracking-tight relative z-10"
-                         :style="{ opacity: slideProgress.s2, transform: `translateY(${(1 - slideProgress.s2) * 20}px)` }">
+                         :style="{ transform: `translateY(${(1 - slideProgress.s2) * 20}px)` }">
                          {{ t.features.c2_desc }}
                       </p>
                    </div>
@@ -608,24 +631,24 @@ onUnmounted(() => {
              <!-- SLIDE 3: Journal (Iridescent -> Revealed by White Circle) -->
              <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-white"
                   :style="{
-                    perspective: '1000px'
+                    perspective: '1500px'
                   }"
              >
                 <div class="absolute inset-0 bg-gradient-to-tr from-rose-50 via-slate-50 to-indigo-50 opacity-80"></div>
                 
                 <!-- Thought Ripples (Visibility Boosted) -->
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple"
-                     :style="{ animationDuration: `${6 - (slideProgress.s3 * 3)}s` }"></div>
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple" style="animation-delay: 1s;"
-                     :style="{ animationDuration: `${6 - (slideProgress.s3 * 3)}s` }"></div>
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple" style="animation-delay: 2s;"
-                     :style="{ animationDuration: `${6 - (slideProgress.s3 * 3)}s` }"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/30 rounded-full animate-ripple"
+                     :style="{ animationDuration: `${5 - (slideProgress.s3 * 2)}s` }"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/20 rounded-full animate-ripple" style="animation-delay: 1.5s;"
+                     :style="{ animationDuration: `${5 - (slideProgress.s3 * 2)}s` }"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] border border-indigo-500/10 rounded-full animate-ripple" style="animation-delay: 3s;"
+                     :style="{ animationDuration: `${5 - (slideProgress.s3 * 2)}s` }"></div>
 
-                <!-- Floating Particles -->
-                <div class="absolute top-1/4 right-1/4 w-32 h-32 bg-indigo-200/30 rounded-full blur-2xl animate-float-slow" style="animation-delay: -2s;"
-                     :style="{ transform: `translateY(${(slideProgress.raw - 2) * -50}px)` }"></div>
-                <div class="absolute bottom-1/3 left-1/3 w-40 h-40 bg-rose-200/30 rounded-full blur-2xl animate-float-slow" style="animation-delay: -5s;"
-                     :style="{ transform: `translateY(${(slideProgress.raw - 2) * 50}px)` }"></div>
+                <!-- Floating Particles (Enhanced Parallax) -->
+                <div class="absolute top-1/4 right-1/4 w-32 h-32 bg-indigo-300/40 rounded-full blur-[40px] animate-float-slow mix-blend-multiply" style="animation-delay: -2s;"
+                     :style="{ transform: `translateY(${(slideProgress.raw - 2) * -150}px) scale(${1 + (slideProgress.s3 * 0.5)})` }"></div>
+                <div class="absolute bottom-1/3 left-1/3 w-40 h-40 bg-rose-300/40 rounded-full blur-[40px] animate-float-slow mix-blend-multiply" style="animation-delay: -5s;"
+                     :style="{ transform: `translateY(${(slideProgress.raw - 2) * 150}px) scale(${1 + (slideProgress.s3 * 0.5)})` }"></div>
 
                 <!-- Background Number (Added Pulse) -->
                 <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none animate-pulse-slow"
@@ -634,7 +657,7 @@ onUnmounted(() => {
 
                 <div class="relative z-10 w-full max-w-[85vw] grid md:grid-cols-2 gap-24 items-center transition-transform duration-75 will-change-transform"
                      :style="{
-                        transform: `rotateY(${(2 - slideProgress.raw) * 45}deg) scale(${Math.max(0.8, slideProgress.s3)})`,
+                        transform: `rotateY(${(2 - slideProgress.raw) * 30}deg) scale(${Math.max(0.9, slideProgress.s3)})`,
                         opacity: slideProgress.s3
                      }"
                 >
@@ -645,103 +668,125 @@ onUnmounted(() => {
                              {{ t.features.c3_title }}
                            </h2>
                        </div>
-                       <p class="text-3xl text-gray-500 font-medium tracking-tight leading-tight max-w-lg relative z-10"
-                          :style="{ opacity: slideProgress.s3, transform: `translateY(${(1 - slideProgress.s3) * 20}px)` }">
+                       <p class="text-3xl text-gray-500 font-medium tracking-tight leading-tight max-w-lg relative z-10 transition-all duration-700"
+                          :style="{ opacity: slideProgress.s3, transform: `translateX(${(1 - slideProgress.s3) * -50}px)` }">
                          {{ t.features.c3_desc }}
                        </p>
                        <div class="flex gap-4 pt-8 relative z-10">
-                          <div class="w-16 h-16 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors duration-500 cursor-pointer group">
-                             <svg class="w-6 h-6 group-hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          <div class="w-20 h-20 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors duration-500 cursor-pointer group shadow-lg hover:scale-110">
+                             <svg class="w-8 h-8 group-hover:rotate-45 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </div>
                        </div>
                    </div>
                    
-                   <div class="relative perspective-1000">
-                      <!-- 3D Floating Cards -->
-                      <div class="animate-float-slow will-change-transform"
-                           :style="{ transform: `rotateY(${(slideProgress.raw - 2) * -30}deg) rotateX(${(slideProgress.raw - 2) * 20}deg)` }">
-                         <div class="bg-white p-10 rounded-[2rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] border border-gray-100 rotate-y-12 rotate-x-6 hover:rotate-0 transition-transform duration-700 ease-out">
-                            <div class="flex items-center justify-between mb-8">
-                               <div class="w-9 h-9 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-400">
-                                  <IconReflection class="w-5 h-5" />
+                   <div class="relative perspective-1000 h-[600px] flex items-center justify-center">
+                      <!-- 3D Floating Cards (Multi-Layer) -->
+                      <!-- Back Layer -->
+                      <div class="absolute w-[80%] h-[70%] bg-white rounded-[2rem] shadow-2xl border border-gray-100 opacity-60 scale-90 -z-10 animate-float-slow" 
+                           style="animation-delay: -2s;"
+                           :style="{ transform: `translateZ(-100px) translateY(${(slideProgress.raw - 2) * -30}px) rotateZ(-5deg)` }"></div>
+                      
+                      <!-- Main Card -->
+                      <div class="relative bg-white/90 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-white/50 w-full animate-float-slow will-change-transform group cursor-pointer"
+                           :style="{ 
+                               transform: `rotateY(${(slideProgress.raw - 2) * -20}deg) rotateX(${(slideProgress.raw - 2) * 15}deg) translateZ(50px)`,
+                               boxShadow: `${(slideProgress.raw - 2) * 40}px 60px 120px -30px rgba(0,0,0,0.15)`
+                           }">
+                            
+                            <!-- Shimmer Overlay -->
+                            <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+
+                            <div class="flex items-center justify-between mb-12">
+                               <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 flex items-center justify-center text-indigo-500 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                                  <IconReflection class="w-8 h-8" />
                                </div>
-                               <div class="w-20 h-2 bg-gray-200 rounded-full"></div>
+                               <div class="w-24 h-3 bg-gray-100 rounded-full"></div>
                             </div>
-                            <div class="space-y-4">
+                            <div class="space-y-6">
                                <div class="h-4 w-full bg-gray-100 rounded-full"></div>
                                <div class="h-4 w-5/6 bg-gray-100 rounded-full"></div>
                                <div class="h-4 w-4/6 bg-gray-100 rounded-full"></div>
+                               <div class="h-4 w-full bg-gray-50 rounded-full"></div>
                             </div>
-                            <div class="mt-8 flex gap-2">
-                               <div class="h-8 w-20 bg-indigo-50 rounded-lg"></div>
-                               <div class="h-8 w-20 bg-rose-50 rounded-lg"></div>
+                            <div class="mt-12 flex gap-3">
+                               <div class="h-10 w-24 bg-indigo-50 rounded-xl animate-pulse"></div>
+                               <div class="h-10 w-24 bg-rose-50 rounded-xl animate-pulse" style="animation-delay: 0.5s"></div>
                             </div>
-                         </div>
                       </div>
                    </div>
                 </div>
              </div>
 
              <!-- SLIDE 4: Sync (Structured/Grid) -->
-             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#F2F2F2]">
-                <!-- Ambient Grid Motion: animate-grid-pan -->
-                <div class="absolute inset-0 will-change-transform animate-grid-pan" 
+             <div class="w-screen h-screen flex-shrink-0 relative overflow-hidden flex items-center justify-center bg-[#0F172A] text-white">
+                <!-- 3D Perspective Grid Floor -->
+                <div class="absolute inset-x-[-50%] bottom-[-50%] h-[150%] origin-bottom will-change-transform" 
                      :style="{
-                        backgroundImage: `linear-gradient(#D4D4D4 1px, transparent 1px), linear-gradient(90deg, #D4D4D4 1px, transparent 1px)`,
-                        backgroundSize: `${Math.max(40, 50 + (1 - slideProgress.s4) * 200)}px ${Math.max(40, 50 + (1 - slideProgress.s4) * 200)}px`,
-                        opacity: slideProgress.s4 > 0.8 ? 1 : 0.5,
-                        transform: `perspective(500px) rotateX(${(1 - slideProgress.s4) * 20}deg)`
-                     }"></div>
+                        backgroundImage: `linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)`,
+                        backgroundSize: '80px 80px',
+                        transform: `perspective(1000px) rotateX(60deg) translateY(${(1 - slideProgress.s4) * 200}px) translateZ(-200px)`,
+                        opacity: 0.4
+                     }">
+                     <div class="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent"></div>
+                </div>
                 
-                <!-- Binary Stream Overlay (Visibility Boosted) -->
-                <div class="absolute inset-0 opacity-10 bg-[repeating-linear-gradient(0deg,transparent,transparent_1px,black_2px)] animate-scan-vertical" style="background-size: 100% 4px;"></div>
+                <!-- High-Intensity Beam Overlay -->
+                <div class="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(90deg,transparent,transparent_49px,rgba(56,189,248,0.5)_50px)] animate-scan" style="background-size: 200% 100%; animation-duration: 10s;"></div>
 
-                <!-- Data Stream Lines (New) -->
-                <div class="absolute top-[20%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent animate-scan-fast"
-                     :style="{ animationDuration: `${3 - (slideProgress.s4 * 1.5)}s` }"></div>
-                <div class="absolute top-[60%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-black/10 to-transparent animate-scan-fast" style="animation-delay: 1s;"
-                     :style="{ animationDuration: `${3 - (slideProgress.s4 * 1.5)}s` }"></div>
-                <div class="absolute left-[30%] top-0 h-full w-[1px] bg-gradient-to-b from-transparent via-black/10 to-transparent animate-scan-vertical" style="animation-duration: 3s;"
-                     :style="{ animationDuration: `${4 - (slideProgress.s4 * 2)}s` }"></div>
+                <!-- Vertical Data Beams -->
+                <div class="absolute left-[20%] top-[-20%] h-[140%] w-[2px] bg-gradient-to-b from-transparent via-cyan-400 to-transparent animate-scan-vertical" 
+                     style="animation-duration: 2s; opacity: 0.6;"></div>
+                <div class="absolute right-[20%] top-[-20%] h-[140%] w-[2px] bg-gradient-to-b from-transparent via-indigo-400 to-transparent animate-scan-vertical" 
+                     style="animation-duration: 3s; animation-delay: 1s; opacity: 0.6;"></div>
+                
+                <!-- Connecting Horizontal Beam -->
+                <div class="absolute top-[50%] left-[-10%] w-[120%] h-[2px] bg-gradient-to-r from-transparent via-white to-transparent animate-scan-fast"
+                     :style="{ animationDuration: `${3 - (slideProgress.s4 * 2)}s` }"></div>
 
                 <!-- Background Number -->
-                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-black/5 select-none z-0 pointer-events-none mix-blend-multiply"
+                <div class="absolute top-12 left-4 md:top-24 md:left-24 text-[12rem] md:text-[16rem] font-black tracking-[-0.06em] leading-none text-white/5 select-none z-0 pointer-events-none"
                      :style="{ transform: `translateY(${(slideProgress.raw - 3) * 100}px)` }"
                 >04</div>
 
                 <div class="relative z-10 w-full max-w-[90vw] flex flex-col items-center text-center"
                      :style="{
                         opacity: slideProgress.s4,
-                        transform: `scale(${Math.min(1, 0.8 + (slideProgress.s4 * 0.2))}) translateY(${(1 - slideProgress.s4) * 50}px)`
+                        transform: `scale(${Math.min(1, 0.8 + (slideProgress.s4 * 0.2))})`
                      }"
                 >
-                   <div class="mb-16 grid grid-cols-1 sm:grid-cols-2 gap-8 md:gap-12">
-                      <div class="group relative">
-                         <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-15 group-hover:opacity-30 transition-opacity"></div>
-                         <div class="relative z-10 w-28 h-28 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-gray-800 group-hover:-translate-y-3 transition-transform duration-500">
-                            <IconDevices class="w-10 h-10" />
+                   <div class="mb-16 grid grid-cols-1 sm:grid-cols-2 gap-16 md:gap-32 relative">
+                      <!-- Connection Line -->
+                      <div class="absolute top-1/2 left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent hidden sm:block">
+                          <div class="absolute top-1/2 left-0 w-full h-[4px] bg-cyan-400 blur-sm -translate-y-1/2 animate-scan-fast" style="animation-duration: 2s;"></div>
+                      </div>
+
+                      <div class="group relative z-10">
+                         <div class="absolute inset-0 bg-cyan-500 rounded-[2.5rem] blur-[60px] opacity-20 group-hover:opacity-50 transition-opacity duration-500 animate-pulse-slow"></div>
+                         <div class="relative z-10 w-32 h-32 bg-[#1E293B] border border-white/10 rounded-[2.5rem] shadow-2xl flex items-center justify-center text-cyan-400 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_0_50px_-10px_rgba(34,211,238,0.5)]">
+                            <IconDevices class="w-14 h-14" />
                          </div>
-                         <div class="relative z-10 mt-4 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-cyan-200/80">
                             {{ t.features.c4_tag1 }}
                          </div>
                       </div>
-                      <div class="group relative sm:mt-10">
-                         <div class="absolute inset-0 bg-black rounded-[2rem] blur-xl opacity-15 group-hover:opacity-30 transition-opacity"></div>
-                         <div class="relative z-10 w-28 h-28 bg-white rounded-[2rem] shadow-xl flex items-center justify-center text-gray-800 group-hover:-translate-y-3 transition-transform duration-500">
-                            <IconClock class="w-10 h-10" />
+                      
+                      <div class="group relative z-10 sm:mt-10">
+                         <div class="absolute inset-0 bg-indigo-500 rounded-[2.5rem] blur-[60px] opacity-20 group-hover:opacity-50 transition-opacity duration-500 animate-pulse-slow" style="animation-delay: 1s;"></div>
+                         <div class="relative z-10 w-32 h-32 bg-[#1E293B] border border-white/10 rounded-[2.5rem] shadow-2xl flex items-center justify-center text-indigo-400 group-hover:-translate-y-4 transition-transform duration-500 group-hover:shadow-[0_0_50px_-10px_rgba(129,140,248,0.5)]">
+                            <IconClock class="w-14 h-14" />
                          </div>
-                         <div class="relative z-10 mt-4 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+                         <div class="relative z-10 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-indigo-200/80">
                             {{ t.features.c4_tag2 }}
                          </div>
                       </div>
                    </div>
                    
-                   <h2 class="relative z-10 text-[12vw] leading-[0.8] font-black tracking-[-0.08em] text-black mb-10 mix-blend-darken uppercase">
+                   <h2 class="relative z-10 text-[10vw] leading-[0.8] font-black tracking-[-0.08em] text-white mb-10 mix-blend-lighten uppercase drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
                       {{ t.features.c4_title }}
                    </h2>
                    
-                   <div class="backdrop-blur-sm bg-white/50 p-6 rounded-2xl border border-black/5 relative z-10">
-                      <p class="text-xl text-black font-mono tracking-tighter whitespace-nowrap">
+                   <div class="backdrop-blur-md bg-white/5 p-6 rounded-2xl border border-white/10 relative z-10 shadow-2xl">
+                      <p class="text-xl text-cyan-100 font-mono tracking-tighter whitespace-nowrap">
                          {{ t.features.c4_desc }}
                       </p>
                    </div>
